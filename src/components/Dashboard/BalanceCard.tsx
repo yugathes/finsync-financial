@@ -6,9 +6,10 @@ interface BalanceCardProps {
   income: number;
   commitments: number;
   currency?: string;
+  onUpdateIncome: () => void;
 }
 
-export const BalanceCard = ({ income, commitments, currency = "MYR" }: BalanceCardProps) => {
+export const BalanceCard = ({ income, commitments, currency = "MYR", onUpdateIncome }: BalanceCardProps) => {
   const balance = income - commitments;
   const isPositive = balance >= 0;
 
@@ -54,7 +55,7 @@ export const BalanceCard = ({ income, commitments, currency = "MYR" }: BalanceCa
           </div>
         </div>
 
-        <Button variant="primary" className="w-full mt-4">
+        <Button variant="primary" className="w-full mt-4" onClick={onUpdateIncome}>
           Update Income
         </Button>
       </CardContent>

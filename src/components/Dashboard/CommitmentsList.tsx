@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Check, Users } from "lucide-react";
+import { Plus, Check, Users, Clock } from "lucide-react";
 
 interface Commitment {
   id: string;
@@ -28,77 +28,140 @@ export const CommitmentsList = ({
   onAddNew 
 }: CommitmentsListProps) => {
   const unpaidCommitments = commitments.filter(c => !c.isPaid);
+  const paidCommitments = commitments.filter(c => c.isPaid);
   const totalUnpaid = unpaidCommitments.reduce((sum, c) => sum + c.amount, 0);
 
   return (
-    <Card className="shadow-card">
+    <Card className="shadow-card animate-fade-in">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-medium">
             This Month's Commitments
           </CardTitle>
-          <Button variant="primary" size="sm" onClick={onAddNew}>
+          <Button variant="primary" size="sm" onClick={onAddNew} className="hidden sm:flex">
             <Plus className="h-4 w-4 mr-1" />
             Add New
           </Button>
         </div>
         {totalUnpaid > 0 && (
-          <div className="text-sm text-muted-foreground">
-            {currency} {totalUnpaid.toLocaleString()} remaining to pay
+          <div className="flex items-center gap-2 text-sm">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">
+              {currency} {totalUnpaid.toLocaleString()} remaining to pay
+            </span>
           </div>
         )}
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         {commitments.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="text-center py-12 text-muted-foreground">
             <div className="text-lg font-medium mb-2">No commitments yet</div>
-            <div className="text-sm">Start by adding your first commitment</div>
+            <div className="text-sm mb-4">Start by adding your first commitment</div>
+            <Button variant="primary" onClick={onAddNew}>
+              <Plus className="h-4 w-4 mr-1" />
+              Add Your First Commitment
+            </Button>
           </div>
         ) : (
-          commitments.map((commitment) => (
-            <div 
-              key={commitment.id} 
-              className={`flex items-center justify-between p-4 rounded-lg border transition-smooth ${
-                commitment.isPaid 
-                  ? 'bg-muted/30 border-muted' 
-                  : 'bg-background border-border hover:shadow-sm'
-              }`}
-            >
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={`font-medium ${commitment.isPaid ? 'text-muted-foreground line-through' : ''}`}>
-                    {commitment.title}
-                  </span>
-                  {commitment.isShared && (
-                    <Users className="h-4 w-4 text-primary" />
-                  )}
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Badge variant={commitment.type === 'static' ? 'secondary' : 'outline'}>
-                    {commitment.type}
-                  </Badge>
-                  <span>{commitment.category}</span>
-                </div>
+          <>
+            {/* Unpaid Commitments */}
+            {unpaidCommitments.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+                  Pending ({unpaidCommitments.length})
+                </h3>
+                {unpaidCommitments.map((commitment) => (
+                  <CommitmentItem 
+                    key={commitment.id}
+                    commitment={commitment}
+                    currency={currency}
+                    onMarkPaid={onMarkPaid}
+                  />
+                ))}
               </div>
-              
-              <div className="flex items-center gap-3">
-                <div className={`text-lg font-semibold ${commitment.isPaid ? 'text-muted-foreground' : ''}`}>
-                  {currency} {commitment.amount.toLocaleString()}
-                </div>
-                <Button
-                  variant={commitment.isPaid ? "secondary" : "success"}
-                  size="sm"
-                  onClick={() => onMarkPaid(commitment.id)}
-                  disabled={commitment.isPaid}
-                >
-                  <Check className="h-4 w-4" />
-                  {commitment.isPaid ? 'Paid' : 'Mark Paid'}
-                </Button>
+            )}
+
+            {/* Divider */}
+            {unpaidCommitments.length > 0 && paidCommitments.length > 0 && (
+              <div className="border-t my-6"></div>
+            )}
+
+            {/* Paid Commitments */}
+            {paidCommitments.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+                  Completed ({paidCommitments.length})
+                </h3>
+                {paidCommitments.map((commitment) => (
+                  <CommitmentItem 
+                    key={commitment.id}
+                    commitment={commitment}
+                    currency={currency}
+                    onMarkPaid={onMarkPaid}
+                  />
+                ))}
               </div>
-            </div>
-          ))
+            )}
+          </>
         )}
       </CardContent>
     </Card>
+  );
+};
+
+interface CommitmentItemProps {
+  commitment: Commitment;
+  currency: string;
+  onMarkPaid: (id: string) => void;
+}
+
+const CommitmentItem = ({ commitment, currency, onMarkPaid }: CommitmentItemProps) => {
+  return (
+    <div 
+      className={`flex items-center justify-between p-4 rounded-xl border transition-smooth animate-fade-in ${
+        commitment.isPaid 
+          ? 'bg-muted/30 border-muted opacity-75' 
+          : 'bg-background border-border hover:shadow-sm hover:border-primary/20'
+      }`}
+    >
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-2">
+          <span className={`font-medium text-base ${commitment.isPaid ? 'text-muted-foreground line-through' : ''}`}>
+            {commitment.title}
+          </span>
+          {commitment.isShared && (
+            <Users className="h-4 w-4 text-primary flex-shrink-0" />
+          )}
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <Badge 
+            variant={commitment.type === 'static' ? 'secondary' : 'outline'} 
+            className="text-xs"
+          >
+            {commitment.type}
+          </Badge>
+          <span className="text-muted-foreground">{commitment.category}</span>
+        </div>
+      </div>
+      
+      <div className="flex items-center gap-3 ml-4">
+        <div className={`text-lg font-semibold text-right ${commitment.isPaid ? 'text-muted-foreground' : ''}`}>
+          <div>{currency}</div>
+          <div>{commitment.amount.toLocaleString()}</div>
+        </div>
+        <Button
+          variant={commitment.isPaid ? "secondary" : "success"}
+          size="sm"
+          onClick={() => onMarkPaid(commitment.id)}
+          disabled={commitment.isPaid}
+          className="flex-shrink-0"
+        >
+          <Check className="h-4 w-4 sm:mr-1" />
+          <span className="hidden sm:inline">
+            {commitment.isPaid ? 'Paid' : 'Mark Paid'}
+          </span>
+        </Button>
+      </div>
+    </div>
   );
 };
