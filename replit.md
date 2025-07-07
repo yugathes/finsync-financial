@@ -6,7 +6,7 @@ FinSync is a comprehensive financial commitment tracking application that helps 
 ## Architecture
 - **Frontend**: React with TypeScript, Tailwind CSS, Shadcn/UI components
 - **Backend**: Express.js with TypeScript
-- **Database**: PostgreSQL with Drizzle ORM
+- **Database**: Supabase PostgreSQL with Drizzle ORM
 - **Styling**: Tailwind CSS with custom design system
 - **Development**: Vite for build tooling and hot reload
 
@@ -45,7 +45,7 @@ FinSync is a comprehensive financial commitment tracking application that helps 
 
 ## Recent Changes
 - **2025-07-06**: Successfully migrated from Lovable to Replit
-- **2025-07-06**: Added PostgreSQL database integration
+- **2025-07-06**: Added Supabase database integration
 - **2025-07-06**: Created comprehensive API for financial data management
 - **2025-07-06**: Fixed UI styling issues with custom Tailwind classes
 - **2025-07-06**: Implemented database seeding for testing
@@ -57,6 +57,15 @@ FinSync is a comprehensive financial commitment tracking application that helps 
 
 ## Development Notes
 - Uses Drizzle ORM for type-safe database operations
+- Supabase connection string required in DATABASE_URL environment variable
 - Environment variables managed through Replit secrets
 - Development server runs on port 5000
 - Database migrations handled via `npm run db:push`
+
+## Supabase Setup Instructions
+1. Go to the [Supabase dashboard](https://supabase.com/dashboard/projects)
+2. Create a new project if you haven't already
+3. Once in the project page, click the "Connect" button on the top toolbar
+4. Copy URI value under "Connection string" -> "Transaction pooler"
+5. Replace `[YOUR-PASSWORD]` with the database password you set for the project
+6. Add the connection string to your Replit secrets as DATABASE_URL
