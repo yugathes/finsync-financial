@@ -4,6 +4,21 @@ import { storage } from "./storage";
 import { insertCommitmentSchema, insertUserSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Test route to check if API is working
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "OK", message: "API is working" });
+  });
+
+  // Test database connection route
+  app.get("/api/db-test", async (req, res) => {
+    try {
+      const testUser = await storage.getUser(1);
+      res.json({ status: "Database connected", user: testUser });
+    } catch (error) {
+      res.status(500).json({ status: "Database error", error: error.message });
+    }
+  });
+
   // User routes
   app.post("/api/users", async (req, res) => {
     try {
@@ -11,7 +26,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.createUser(userData);
       res.json(user);
     } catch (error) {
-      res.status(400).json({ error: "Invalid user data" });
+      console.error('Error creating user:', error);
+      res.status(400).json({ error: "Invalid user data", details: error.message });
     }
   });
 
