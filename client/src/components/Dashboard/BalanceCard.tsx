@@ -14,10 +14,10 @@ export const BalanceCard = ({ income, commitments, currency = "MYR", onUpdateInc
   const isPositive = balance >= 0;
 
   return (
-    <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg border-0">
+    <Card className="bg-gradient-primary text-primary-foreground shadow-elevation border-0">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-medium flex items-center gap-2">
-          <DollarSign className="h-5 w-5 text-white" />
+          <DollarSign className="h-5 w-5" />
           Monthly Balance
         </CardTitle>
       </CardHeader>
@@ -40,22 +40,26 @@ export const BalanceCard = ({ income, commitments, currency = "MYR", onUpdateInc
         </div>
 
         {/* Income & Commitments Breakdown */}
-        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-blue-400">
+        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-primary-foreground/20">
           <div className="text-center">
-            <div className="text-sm text-blue-100">Income</div>
-            <div className="text-xl font-semibold text-green-200">
+            <div className="text-sm text-primary-foreground/70">Income</div>
+            <div className="text-xl font-semibold text-accent-foreground">
               {currency} {income.toLocaleString()}
             </div>
           </div>
           <div className="text-center">
-            <div className="text-sm text-blue-100">Commitments</div>
-            <div className="text-xl font-semibold text-red-200">
+            <div className="text-sm text-primary-foreground/70">Commitments</div>
+            <div className="text-xl font-semibold text-destructive-foreground">
               {currency} {commitments.toLocaleString()}
             </div>
           </div>
         </div>
 
-        <Button variant="secondary" className="w-full mt-4 bg-white text-blue-600 hover:bg-blue-50" onClick={onUpdateIncome}>
+        <Button 
+          variant="secondary" 
+          className="w-full mt-4 bg-background text-foreground hover:bg-background/90 transition-smooth" 
+          onClick={onUpdateIncome}
+        >
           Update Income
         </Button>
       </CardContent>

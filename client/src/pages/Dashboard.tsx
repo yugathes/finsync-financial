@@ -1,8 +1,8 @@
 import React from 'react';
-import { Dashboard } from '../components/Dashboard/Dashboard';
+import { RefactoredDashboard } from '../components/Dashboard/RefactoredDashboard';
 
 const DashboardPage: React.FC = () => {
-  return <Dashboard />;
+  return <RefactoredDashboard />;
 };
 
 export default DashboardPage;

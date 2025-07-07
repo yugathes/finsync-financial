@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Access Vite environment variables
-const supabaseUrl = import.meta.env.VITE_REACT_APP_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_REACT_APP_SUPABASE_ANON_KEY;
+// Use the actual Supabase project URL and anon key
+const supabaseUrl = 'https://ezcatmlmwyavjbsemabx.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6Y2F0bWxtd3lhdmpic2VtYWJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE3OTgxMjQsImV4cCI6MjA2NzM3NDEyNH0.MDc7qU5KuiJKhouBDQqu0zPO3cDSCVZbtVYckOWYSvo';
 
 console.log('Supabase URL:', supabaseUrl ? 'Set' : 'Not set');
 console.log('Supabase Anon Key:', supabaseAnonKey ? 'Set' : 'Not set');
