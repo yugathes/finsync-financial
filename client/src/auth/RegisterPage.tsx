@@ -40,16 +40,24 @@ const RegisterPage: React.FC = () => {
     setLoading(true);
     
     try {
-      const { error } = await supabase.auth.signUp({
+      console.log('Attempting to register with:', { email });
+      
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
       
-      if (error) throw error;
+      console.log('Registration response:', { data, error });
+      
+      if (error) {
+        console.error('Registration error:', error);
+        throw error;
+      }
       
       setSuccess('Registration successful! Please check your email to confirm your account.');
     } catch (error: any) {
-      setError(error.message);
+      console.error('Registration catch error:', error);
+      setError(error.message || 'Registration failed');
     } finally {
       setLoading(false);
     }

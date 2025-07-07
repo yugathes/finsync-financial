@@ -15,3 +15,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Test the connection immediately
+supabase.auth.getSession().then(({ data, error }) => {
+  if (error) {
+    console.error('Supabase auth test error:', error);
+  } else {
+    console.log('Supabase auth test successful:', data ? 'Session exists' : 'No session');
+  }
+});
