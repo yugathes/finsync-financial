@@ -1,5 +1,5 @@
 import { eq, desc } from 'drizzle-orm';
-import { db } from './db';
+import { db, supabase } from './db';
 import { users, commitments, type User, type InsertUser, type Commitment, type InsertCommitment } from "@shared/schema";
 
 // Storage interface for financial commitment tracker
@@ -21,63 +21,196 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // User methods
   async getUser(id: number): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.id, id));
-    return result[0];
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching user:', error);
+        return undefined;
+      }
+      
+      return data || undefined;
+    } catch (error) {
+      console.error('Database error:', error);
+      return undefined;
+    }
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.username, username));
-    return result[0];
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('username', username)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching user by username:', error);
+        return undefined;
+      }
+      
+      return data || undefined;
+    } catch (error) {
+      console.error('Database error:', error);
+      return undefined;
+    }
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const result = await db.insert(users).values(insertUser).returning();
-    return result[0];
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .insert(insertUser)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error creating user:', error);
+        throw new Error(error.message);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Database error:', error);
+      throw error;
+    }
   }
 
   async updateUserIncome(userId: number, income: string): Promise<User> {
-    const result = await db.update(users)
-      .set({ monthlyIncome: income, updatedAt: new Date() })
-      .where(eq(users.id, userId))
-      .returning();
-    return result[0];
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update({ monthlyIncome: income, updatedAt: new Date().toISOString() })
+        .eq('id', userId)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error updating user income:', error);
+        throw new Error(error.message);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Database error:', error);
+      throw error;
+    }
   }
 
   // Commitment methods
   async getCommitmentsByUser(userId: number): Promise<Commitment[]> {
-    return await db.select().from(commitments)
-      .where(eq(commitments.userId, userId))
-      .orderBy(desc(commitments.createdAt));
+    try {
+      const { data, error } = await supabase
+        .from('commitments')
+        .select('*')
+        .eq('userId', userId)
+        .order('createdAt', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching commitments:', error);
+        return [];
+      }
+      
+      return data || [];
+    } catch (error) {
+      console.error('Database error:', error);
+      return [];
+    }
   }
 
   async createCommitment(commitment: InsertCommitment & { userId: number }): Promise<Commitment> {
-    const result = await db.insert(commitments).values(commitment).returning();
-    return result[0];
+    try {
+      const { data, error } = await supabase
+        .from('commitments')
+        .insert(commitment)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error creating commitment:', error);
+        throw new Error(error.message);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Database error:', error);
+      throw error;
+    }
   }
 
   async updateCommitment(id: number, updates: Partial<Commitment>): Promise<Commitment> {
-    const result = await db.update(commitments)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(commitments.id, id))
-      .returning();
-    return result[0];
+    try {
+      const { data, error } = await supabase
+        .from('commitments')
+        .update({ ...updates, updatedAt: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error updating commitment:', error);
+        throw new Error(error.message);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Database error:', error);
+      throw error;
+    }
   }
 
   async deleteCommitment(id: number): Promise<void> {
-    await db.delete(commitments).where(eq(commitments.id, id));
+    try {
+      const { error } = await supabase
+        .from('commitments')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        console.error('Error deleting commitment:', error);
+        throw new Error(error.message);
+      }
+    } catch (error) {
+      console.error('Database error:', error);
+      throw error;
+    }
   }
 
   async toggleCommitmentPaid(id: number): Promise<Commitment> {
-    const [commitment] = await db.select().from(commitments).where(eq(commitments.id, id));
-    if (!commitment) {
-      throw new Error('Commitment not found');
+    try {
+      // First get the current commitment
+      const { data: commitment, error: fetchError } = await supabase
+        .from('commitments')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (fetchError || !commitment) {
+        throw new Error('Commitment not found');
+      }
+      
+      // Then update it
+      const { data, error } = await supabase
+        .from('commitments')
+        .update({ isPaid: !commitment.isPaid, updatedAt: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error toggling commitment paid status:', error);
+        throw new Error(error.message);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Database error:', error);
+      throw error;
     }
-    
-    const result = await db.update(commitments)
-      .set({ isPaid: !commitment.isPaid, updatedAt: new Date() })
-      .where(eq(commitments.id, id))
-      .returning();
-    return result[0];
   }
 }
 
