@@ -1,99 +1,62 @@
 # FinSync - Financial Commitment Tracker
 
-## Overview
+## Project Overview
+FinSync is a comprehensive financial commitment tracking application that helps users manage their monthly expenses, commitments, and financial goals. The app provides a clean, modern interface for tracking both static and dynamic financial commitments.
 
-FinSync is a modern financial commitment tracking application built with React, TypeScript, and Node.js. It helps users manage their monthly financial commitments, track expenses, and maintain budget awareness through an intuitive web interface.
-
-## System Architecture
-
-### Frontend Architecture
-- **Framework**: React 18 with TypeScript
-- **UI Library**: Radix UI components with custom styling
-- **Styling**: Tailwind CSS with custom design system
-- **State Management**: React hooks with TanStack Query for server state
-- **Routing**: React Router for client-side navigation
-- **Build Tool**: Vite for fast development and optimized builds
-
-### Backend Architecture
-- **Runtime**: Node.js with Express.js
-- **Language**: TypeScript with ES modules
+## Architecture
+- **Frontend**: React with TypeScript, Tailwind CSS, Shadcn/UI components
+- **Backend**: Express.js with TypeScript
 - **Database**: PostgreSQL with Drizzle ORM
-- **Database Provider**: Neon Database (serverless PostgreSQL)
-- **Session Management**: In-memory storage with planned database migration
+- **Styling**: Tailwind CSS with custom design system
+- **Development**: Vite for build tooling and hot reload
 
-### Design System
-- **Theme**: Custom "FinSync" financial app theme with blue primary colors
-- **Component Library**: Shadcn/ui components with financial-specific variants
-- **Typography**: Modern typography with clear hierarchy
-- **Icons**: Lucide React icons for consistency
+## Key Features
+- User management with monthly income tracking
+- Financial commitment management (static/dynamic)
+- Shared commitment support
+- Real-time balance calculations
+- Professional financial UI with gradients and shadows
+- Responsive design for mobile and desktop
 
-## Key Components
+## Database Schema
+### Users Table
+- id (primary key)
+- username (unique)
+- password
+- monthlyIncome (decimal)
+- createdAt, updatedAt (timestamps)
 
-### Frontend Components
-- **Dashboard**: Main financial overview with balance cards and commitment lists
-- **Commitment Management**: Form-based commitment creation and editing
-- **Balance Tracking**: Real-time income vs. commitment calculations
-- **Responsive Design**: Mobile-first approach with floating action buttons
+### Commitments Table
+- id (primary key)
+- userId (foreign key)
+- title
+- amount (decimal)
+- type (static/dynamic)
+- category
+- isPaid (boolean)
+- isShared (boolean)
+- sharedWith (array of user IDs)
+- dueDate (optional)
+- createdAt, updatedAt (timestamps)
 
-### Backend Components
-- **Storage Interface**: Abstracted storage layer supporting both memory and database backends
-- **Express Server**: RESTful API structure with error handling middleware
-- **Database Schema**: User management with extensible commitment tracking
-- **Development Tools**: Hot reload and runtime error overlay for development
+## API Endpoints
+- **Users**: POST /api/users, GET /api/users/:id, PUT /api/users/:id/income
+- **Commitments**: GET /api/commitments/user/:userId, POST /api/commitments, PUT /api/commitments/:id, DELETE /api/commitments/:id, PUT /api/commitments/:id/toggle
 
-### Database Schema
-- **Users Table**: Basic user authentication with username/password
-- **Extensible Design**: Schema ready for commitment, category, and sharing features
-
-## Data Flow
-
-1. **User Interface**: React components manage local state and user interactions
-2. **API Layer**: Express routes handle HTTP requests and business logic
-3. **Storage Layer**: Abstracted storage interface allows switching between memory and database
-4. **Database**: PostgreSQL stores persistent user and commitment data
-5. **Real-time Updates**: TanStack Query manages server state synchronization
-
-## External Dependencies
-
-### Core Dependencies
-- **@neondatabase/serverless**: Serverless PostgreSQL database connection
-- **drizzle-orm**: Type-safe database ORM with PostgreSQL dialect
-- **@tanstack/react-query**: Server state management and caching
-- **express**: Web application framework
-- **@radix-ui/***: Accessible UI component primitives
-
-### Development Dependencies
-- **vite**: Fast build tool and development server
-- **tsx**: TypeScript execution for Node.js
-- **tailwindcss**: Utility-first CSS framework
-- **@replit/vite-plugin-***: Replit-specific development tools
-
-## Deployment Strategy
-
-### Development Environment
-- **Local Development**: Vite dev server with hot module replacement
-- **Database**: Neon Database with connection pooling
-- **Environment Variables**: DATABASE_URL for database connection
-
-### Production Build
-- **Frontend**: Vite builds optimized static assets
-- **Backend**: ESBuild bundles Node.js server code
-- **Deployment**: Single-command deployment with `npm run build` and `npm start`
-
-### Build Process
-1. Frontend assets compiled to `dist/public`
-2. Backend compiled to `dist/index.js`
-3. Database migrations applied via `drizzle-kit push`
-
-## Changelog
-
-```
-Changelog:
-- July 06, 2025. Initial setup
-```
+## Recent Changes
+- **2025-07-06**: Successfully migrated from Lovable to Replit
+- **2025-07-06**: Added PostgreSQL database integration
+- **2025-07-06**: Created comprehensive API for financial data management
+- **2025-07-06**: Fixed UI styling issues with custom Tailwind classes
+- **2025-07-06**: Implemented database seeding for testing
 
 ## User Preferences
+- Professional, clean UI design
+- Focus on financial data security
+- Responsive design for all devices
 
-```
-Preferred communication style: Simple, everyday language.
-```
+## Development Notes
+- Uses Drizzle ORM for type-safe database operations
+- Environment variables managed through Replit secrets
+- Development server runs on port 5000
+- Database migrations handled via `npm run db:push`
