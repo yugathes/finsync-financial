@@ -9,10 +9,10 @@ export const FloatingActionButton = ({ onClick }: FloatingActionButtonProps) => 
   return (
     <Button
       onClick={onClick}
-      className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-elevation bg-gradient-primary hover:shadow-primary transition-smooth z-40 sm:hidden"
+      className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow bg-blue-600 hover:bg-blue-700 text-white z-40 sm:hidden"
       size="icon"
     >
-      <Plus className="h-6 w-6 text-white" />
+      <Plus className="h-6 w-6" />
     </Button>
   );
 };

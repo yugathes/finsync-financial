@@ -77,10 +77,10 @@ export const Dashboard = () => {
       ...newCommitment,
       isPaid: false,
       isShared: false,
-      sharedWith: undefined
+      ...(newCommitment.type === 'dynamic' ? { sharedWith: [] } : {})
     };
     
-    setCommitments(prev => [...prev, commitment]);
+    setCommitments(prev => [...prev, commitment as any]);
     setShowCommitmentForm(false);
     
     toast({
@@ -107,11 +107,11 @@ export const Dashboard = () => {
   const paidCommitments = commitments.filter(c => c.isPaid).reduce((sum, c) => sum + c.amount, 0);
 
   return (
-    <div className="space-y-6 pb-20 sm:pb-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 space-y-6 pb-20 sm:pb-6">
       {/* Welcome Section */}
       <div className="text-center space-y-2 animate-fade-in">
-        <h2 className="text-2xl sm:text-3xl font-bold">Welcome to FinSync</h2>
-        <p className="text-muted-foreground text-base sm:text-lg">
+        <h2 className="text-2xl sm:text-3xl font-bold text-blue-800">Welcome to FinSync</h2>
+        <p className="text-blue-600 text-base sm:text-lg">
           Track your commitments and stay financially organized
         </p>
       </div>

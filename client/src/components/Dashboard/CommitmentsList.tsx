@@ -32,21 +32,21 @@ export const CommitmentsList = ({
   const totalUnpaid = unpaidCommitments.reduce((sum, c) => sum + c.amount, 0);
 
   return (
-    <Card className="shadow-card animate-fade-in">
+    <Card className="bg-white shadow-lg border-0 animate-fade-in">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-medium">
+          <CardTitle className="text-lg font-medium text-blue-800">
             This Month's Commitments
           </CardTitle>
-          <Button variant="primary" size="sm" onClick={onAddNew} className="hidden sm:flex">
+          <Button variant="default" size="sm" onClick={onAddNew} className="hidden sm:flex bg-blue-600 hover:bg-blue-700 text-white">
             <Plus className="h-4 w-4 mr-1" />
             Add New
           </Button>
         </div>
         {totalUnpaid > 0 && (
           <div className="flex items-center gap-2 text-sm">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">
+            <Clock className="h-4 w-4 text-blue-500" />
+            <span className="text-blue-600">
               {currency} {totalUnpaid.toLocaleString()} remaining to pay
             </span>
           </div>
@@ -54,10 +54,10 @@ export const CommitmentsList = ({
       </CardHeader>
       <CardContent className="space-y-4">
         {commitments.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
+          <div className="text-center py-12 text-blue-600">
             <div className="text-lg font-medium mb-2">No commitments yet</div>
             <div className="text-sm mb-4">Start by adding your first commitment</div>
-            <Button variant="primary" onClick={onAddNew}>
+            <Button variant="default" onClick={onAddNew} className="bg-blue-600 hover:bg-blue-700 text-white">
               <Plus className="h-4 w-4 mr-1" />
               Add Your First Commitment
             </Button>
