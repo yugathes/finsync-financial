@@ -1,8 +1,24 @@
 import { eq, desc } from 'drizzle-orm';
 import { db, supabase } from './db';
-import { users, commitments, type User, type InsertUser, type Commitment, type InsertCommitment } from "@shared/schema";
+import { 
+  users, 
+  commitments, 
+  monthlyIncome,
+  newCommitments,
+  commitmentPayments,
+  type User, 
+  type InsertUser, 
+  type Commitment, 
+  type InsertCommitment,
+  type MonthlyIncome,
+  type InsertMonthlyIncome,
+  type NewCommitment,
+  type InsertNewCommitment,
+  type CommitmentPayment,
+  type InsertCommitmentPayment
+} from "@shared/schema";
 
-// Storage interface for financial commitment tracker
+// Enhanced storage interface for comprehensive commitment management
 export interface IStorage {
   // User methods
   getUser(id: number): Promise<User | undefined>;
@@ -10,11 +26,26 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUserIncome(userId: number, income: string): Promise<User>;
   
-  // Commitment methods
-  getCommitmentsByUser(userId: number): Promise<Commitment[]>;
-  createCommitment(commitment: InsertCommitment & { userId: number }): Promise<Commitment>;
-  updateCommitment(id: number, updates: Partial<Commitment>): Promise<Commitment>;
-  deleteCommitment(id: number): Promise<void>;
+  // Monthly Income methods
+  getMonthlyIncome(userId: number, month: string): Promise<MonthlyIncome | undefined>;
+  setMonthlyIncome(userId: number, income: InsertMonthlyIncome): Promise<MonthlyIncome>;
+  updateMonthlyIncome(userId: number, month: string, amount: string): Promise<MonthlyIncome>;
+  
+  // New Commitment methods
+  getCommitmentsByUser(userId: number): Promise<NewCommitment[]>;
+  getCommitmentsForMonth(userId: number, month: string): Promise<(NewCommitment & { isPaid: boolean; amountPaid?: string })[]>;
+  createCommitment(commitment: InsertNewCommitment & { userId: number }): Promise<NewCommitment>;
+  updateCommitment(id: string, updates: Partial<NewCommitment>): Promise<NewCommitment>;
+  deleteCommitment(id: string): Promise<void>;
+  
+  // Payment methods
+  markCommitmentPaid(commitmentId: string, userId: number, month: string, amount: string): Promise<CommitmentPayment>;
+  markCommitmentUnpaid(commitmentId: string, month: string): Promise<void>;
+  getCommitmentPayments(userId: number, month: string): Promise<CommitmentPayment[]>;
+  
+  // Legacy methods (for backward compatibility)
+  getLegacyCommitmentsByUser(userId: number): Promise<Commitment[]>;
+  createLegacyCommitment(commitment: InsertCommitment & { userId: number }): Promise<Commitment>;
   toggleCommitmentPaid(id: number): Promise<Commitment>;
 }
 
