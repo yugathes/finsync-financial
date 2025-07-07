@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCommitmentSchema, insertUserSchema } from "@shared/schema";
+import { supabase } from "./db";
+import { insertCommitmentSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Test route to check if API is working
@@ -12,22 +13,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Test database connection route
   app.get("/api/db-test", async (req, res) => {
     try {
-      const testUser = await storage.getUser(1);
-      res.json({ status: "Database connected", user: testUser });
+      // Test Supabase connection with a simple query
+      const { data, error } = await supabase.from('users').select('count').limit(1);
+      if (error) {
+        throw error;
+      }
+      res.json({ status: "Database connected", supabase: "OK" });
     } catch (error) {
       res.status(500).json({ status: "Database error", error: error.message });
     }
   });
 
-  // User routes
-  app.post("/api/users", async (req, res) => {
+  // User profile routes (for financial data, not authentication)
+  app.post("/api/profile", async (req, res) => {
     try {
-      const userData = insertUserSchema.parse(req.body);
-      const user = await storage.createUser(userData);
-      res.json(user);
+      const { monthlyIncome, userId } = req.body;
+      
+      // Create or update user profile in our users table
+      const { data, error } = await supabase
+        .from('users')
+        .upsert({ 
+          id: userId, 
+          monthly_income: monthlyIncome,
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        throw error;
+      }
+      
+      res.json(data);
     } catch (error) {
-      console.error('Error creating user:', error);
-      res.status(400).json({ error: "Invalid user data", details: error.message });
+      console.error('Error updating profile:', error);
+      res.status(400).json({ error: "Failed to update profile", details: error.message });
     }
   });
 

@@ -5,16 +5,21 @@ import * as schema from '@shared/schema';
 
 // Use Supabase environment variables
 const supabaseUrl = process.env.VITE_REACT_APP_SUPABASE_URL;
-const supabaseAnonKey = process.env.VITE_REACT_APP_SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!supabaseUrl || !supabaseServiceKey) {
   throw new Error(
-    "VITE_REACT_APP_SUPABASE_URL and VITE_REACT_APP_SUPABASE_ANON_KEY must be set",
+    "VITE_REACT_APP_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set",
   );
 }
 
-// Create Supabase client for authentication and real-time features
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Create Supabase client with service role key for server-side operations
+export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+});
 
 // Since we don't have the direct database password, we'll use Supabase's REST API approach
 // For now, we'll keep the Drizzle setup but use DATABASE_URL if available
