@@ -14,11 +14,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/db-test", async (req, res) => {
     try {
       // Test Supabase connection with a simple query
-      const { data, error } = await supabase.from('users').select('count').limit(1);
+      const { data, error } = await supabase.from('users').select('*').limit(1);
       if (error) {
+        console.error('Database test error:', error);
         throw error;
       }
-      res.json({ status: "Database connected", supabase: "OK" });
+      res.json({ status: "Database connected", supabase: "OK", sample: data });
     } catch (error) {
       res.status(500).json({ status: "Database error", error: error.message });
     }

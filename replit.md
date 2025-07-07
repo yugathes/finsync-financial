@@ -45,10 +45,16 @@ FinSync is a comprehensive financial commitment tracking application that helps 
 
 ## Recent Changes
 - **2025-07-06**: Successfully migrated from Lovable to Replit
-- **2025-07-06**: Added Supabase database integration
-- **2025-07-06**: Created comprehensive API for financial data management
-- **2025-07-06**: Fixed UI styling issues with custom Tailwind classes
-- **2025-07-06**: Implemented database seeding for testing
+- **2025-07-06**: Added Supabase database integration with service role key
+- **2025-07-06**: Created complete authentication system with login/register pages
+- **2025-07-06**: Updated all API endpoints to work with Supabase REST API
+- **2025-07-06**: Fixed React app structure with protected routes and AuthProvider
+- **2025-07-06**: Database schema column naming needs to be fixed in Supabase
+
+## Current Issues to Resolve
+- Database tables may have wrong column names (monthlyIncome vs monthly_income)
+- Frontend "Invalid API key" error on sign up needs investigation
+- Need to run fix-db-schema.sql in Supabase dashboard
 
 ## User Preferences
 - Professional, clean UI design
