@@ -398,14 +398,113 @@ export const NewDashboard: React.FC = () => {
       <FloatingActionButton onClick={() => setShowCommitmentForm(true)} />
 
       {/* Modals */}
-      <MonthlyIncomeForm
-        currentIncome={monthlyIncome}
-        month={currentMonth}
-        onSubmit={handleUpdateIncome}
-        onCancel={() => setShowIncomeForm(false)}
-        isVisible={showIncomeForm}
-        currency="MYR"
-      />
+      {showIncomeForm && user?.id && (
+        <MonthlyIncomeForm
+          userId={user.id}
+          currentMonth={currentMonth}
+          onIncomeUpdated={(newIncome) => {
+            handleUpdateIncome(newIncome);
+            // setShowIncomeForm(false); // handleUpdateIncome already does this
+          }}
+        />
+      )}
+
+      {/*
+        The original MonthlyIncomeForm also had an onCancel prop.
+        This is now handled by the button that would set showIncomeForm to false.
+        The MonthlyIncomeForm itself has a cancel button internally if it's in editing mode
+        and an income already exists.
+        We might need a dedicated "Close" or "Cancel" button if setShowIncomeForm(true)
+        shows a form that doesn't have an income yet (i.e., currentIncomeAmount === 0).
+        Let's check the MonthlyIncomeForm logic for the cancel button:
+        It shows a cancel button if `isEditing && currentIncomeAmount > 0`.
+        If `currentIncomeAmount === 0`, it doesn't show a cancel button, only "Save Income".
+        This means if the user opens the form when income is 0, they can only save, not cancel.
+        This might be an issue.
+
+        For now, let's add a simple way to close it, perhaps by wrapping it or adding a button
+        in NewDashboard.tsx if this becomes an issue.
+        The original onCancel was `() => setShowIncomeForm(false)`.
+        The "Update" button in the "Financial Overview" card sets `setShowIncomeForm(true)`.
+        The `MonthlyIncomeForm` itself has a cancel button that calls `setIsEditing(false)`.
+        This doesn't hide the component if it was shown because income was 0.
+
+        Let's refine the logic for displaying and hiding the MonthlyIncomeForm.
+        The "Set Income" / "Update" button in NewDashboard controls `showIncomeForm`.
+        If the user wants to cancel, they need a way to set `showIncomeForm` to false.
+        The internal cancel button of MonthlyIncomeForm only toggles its internal `isEditing` state.
+
+        A simple solution is to provide a way to close it from NewDashboard.
+        We can wrap MonthlyIncomeForm in a Dialog-like structure or pass setShowIncomeForm down.
+        However, MonthlyIncomeForm is a Card, not a Dialog.
+
+        Let's consider the user flow:
+        1. User clicks "Set Income" or "Update Income" -> showIncomeForm = true.
+        2. MonthlyIncomeForm appears.
+           - If income exists, it shows current income and an "Edit" button. Clicking "Edit" sets its internal `isEditing` to true.
+             In edit mode, it has "Save" and "Cancel" (which sets `isEditing` to false).
+           - If income is 0, it shows the form directly with a "Save Income" button. No "Cancel" button.
+
+        This means if income is 0, and the form is shown, there's no way to hide it using its internal buttons.
+        The `onCancel` prop was essential for this.
+        Since MonthlyIncomeForm doesn't accept onCancel, we need to provide this externally if `showIncomeForm` is true.
+
+        Let's re-evaluate. The `MonthlyIncomeForm` is not a modal. It's a card.
+        The `NewDashboard` was trying to use it *as if* it were a modal.
+        The current structure of `MonthlyIncomeForm` is that it's always visible once rendered and manages its edit state.
+
+        If `NewDashboard` renders `MonthlyIncomeForm` conditionally using `showIncomeForm`,
+        then `NewDashboard` needs a way to set `showIncomeForm` to `false` to "close" it.
+        The `handleUpdateIncome` (which becomes `onIncomeUpdated`) already sets `setShowIncomeForm(false)`.
+        So, after successfully updating income, the form will hide.
+
+        The issue is cancelling when no income is set yet (the form is open for initial setting).
+        The `MonthlyIncomeForm` has this structure:
+        <Card>
+          <CardHeader>...</CardHeader>
+          {(isEditing || currentIncomeAmount === 0) && ( // Form content here
+            <CardContent>
+              <form onSubmit={handleSubmit}>
+                 ...
+                 {isEditing && currentIncomeAmount > 0 && (<Button type="button" variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>)}
+              </form>
+            </CardContent>
+          )}
+        </Card>
+
+        So if `currentIncomeAmount === 0`, the form is shown, but no Cancel button from within the form.
+        The `NewDashboard` needs to provide a way to hide it.
+        This could be an explicit "Close" button next to where it's rendered, or perhaps the "Set/Update Income" button could toggle `showIncomeForm`.
+
+        Let's assume for now that `handleUpdateIncome` successfully setting `showIncomeForm = false` is the primary way it's hidden.
+        The original `onCancel={() => setShowIncomeForm(false)}` prop on the erroneous call suggests this was the intent.
+        Since `MonthlyIncomeForm` doesn't take `onCancel`, we need to handle this in `NewDashboard`.
+
+        The simplest approach is to wrap the conditionally rendered `MonthlyIncomeForm`
+        with a section that includes a close button if `showIncomeForm` is true.
+      */}
+      {showIncomeForm && user?.id && (
+        <Card className="mt-4"> {/* Added a wrapper Card for consistent styling and to place a close button */}
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle>Manage Monthly Income</CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => setShowIncomeForm(false)}>Close</Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <MonthlyIncomeForm
+              userId={user.id}
+              currentMonth={currentMonth}
+              onIncomeUpdated={(newIncome) => {
+                // handleUpdateIncome already calls setShowIncomeForm(false)
+                // and sets the monthlyIncome state.
+                // We just need to ensure it's called.
+                handleUpdateIncome(newIncome);
+              }}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       <NewCommitmentForm
         onSubmit={handleCreateCommitment}
