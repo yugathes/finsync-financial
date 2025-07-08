@@ -31,21 +31,18 @@ export interface IStorage {
   setMonthlyIncome(userId: number, income: InsertMonthlyIncome): Promise<MonthlyIncome>;
   updateMonthlyIncome(userId: number, month: string, amount: string): Promise<MonthlyIncome>;
   
-  // New Commitment methods
-  getCommitmentsByUser(userId: number): Promise<NewCommitment[]>;
-  getCommitmentsForMonth(userId: number, month: string): Promise<(NewCommitment & { isPaid: boolean; amountPaid?: string })[]>;
-  createCommitment(commitment: InsertNewCommitment & { userId: number }): Promise<NewCommitment>;
-  updateCommitment(id: string, updates: Partial<NewCommitment>): Promise<NewCommitment>;
-  deleteCommitment(id: string): Promise<void>;
+  // Legacy Commitment methods (keeping for backward compatibility)
+  getCommitmentsByUser(userId: number): Promise<Commitment[]>;
+  createCommitment(commitment: InsertCommitment & { userId: number }): Promise<Commitment>;
+  updateCommitment(id: number, updates: Partial<Commitment>): Promise<Commitment>;
+  deleteCommitment(id: number): Promise<void>;
   
   // Payment methods
   markCommitmentPaid(commitmentId: string, userId: number, month: string, amount: string): Promise<CommitmentPayment>;
   markCommitmentUnpaid(commitmentId: string, month: string): Promise<void>;
   getCommitmentPayments(userId: number, month: string): Promise<CommitmentPayment[]>;
   
-  // Legacy methods (for backward compatibility)
-  getLegacyCommitmentsByUser(userId: number): Promise<Commitment[]>;
-  createLegacyCommitment(commitment: InsertCommitment & { userId: number }): Promise<Commitment>;
+  // Toggle methods
   toggleCommitmentPaid(id: number): Promise<Commitment>;
 }
 
@@ -241,6 +238,122 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Database error:', error);
       throw error;
+    }
+  }
+
+  // Monthly Income methods
+  async getMonthlyIncome(userId: number, month: string): Promise<MonthlyIncome | undefined> {
+    try {
+      const { data, error } = await supabase
+        .from('monthly_income')
+        .select('*')
+        .eq('userId', userId)
+        .eq('month', month)
+        .single();
+      
+      if (error) {
+        return undefined;
+      }
+      
+      return data || undefined;
+    } catch (error) {
+      return undefined;
+    }
+  }
+
+  async setMonthlyIncome(userId: number, income: InsertMonthlyIncome): Promise<MonthlyIncome> {
+    try {
+      const { data, error } = await supabase
+        .from('monthly_income')
+        .insert({ ...income, userId })
+        .select()
+        .single();
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async updateMonthlyIncome(userId: number, month: string, amount: string): Promise<MonthlyIncome> {
+    try {
+      const { data, error } = await supabase
+        .from('monthly_income')
+        .update({ amount, updatedAt: new Date().toISOString() })
+        .eq('userId', userId)
+        .eq('month', month)
+        .select()
+        .single();
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  // Payment methods
+  async markCommitmentPaid(commitmentId: string, userId: number, month: string, amount: string): Promise<CommitmentPayment> {
+    try {
+      const { data, error } = await supabase
+        .from('commitment_payments')
+        .insert({
+          commitmentId,
+          month,
+          paidBy: userId,
+          amountPaid: amount
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async markCommitmentUnpaid(commitmentId: string, month: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('commitment_payments')
+        .delete()
+        .eq('commitmentId', commitmentId)
+        .eq('month', month);
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getCommitmentPayments(userId: number, month: string): Promise<CommitmentPayment[]> {
+    try {
+      const { data, error } = await supabase
+        .from('commitment_payments')
+        .select('*')
+        .eq('paidBy', userId)
+        .eq('month', month);
+      
+      if (error) {
+        return [];
+      }
+      
+      return data || [];
+    } catch (error) {
+      return [];
     }
   }
 }

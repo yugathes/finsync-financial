@@ -20,7 +20,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw error;
       }
       res.json({ status: "Database connected", supabase: "OK", sample: data });
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ status: "Database error", error: error.message });
     }
   });
@@ -46,7 +46,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating profile:', error);
       res.status(400).json({ error: "Failed to update profile", details: error.message });
     }
