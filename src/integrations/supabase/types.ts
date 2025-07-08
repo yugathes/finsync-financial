@@ -14,52 +14,132 @@ export type Database = {
   }
   public: {
     Tables: {
+      commitment_payments: {
+        Row: {
+          amount_paid: number
+          commitment_id: string
+          created_at: string
+          id: string
+          month: string
+          paid_at: string
+          paid_by: number
+        }
+        Insert: {
+          amount_paid: number
+          commitment_id: string
+          created_at?: string
+          id?: string
+          month: string
+          paid_at?: string
+          paid_by: number
+        }
+        Update: {
+          amount_paid?: number
+          commitment_id?: string
+          created_at?: string
+          id?: string
+          month?: string
+          paid_at?: string
+          paid_by?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_commitment_payments_commitment_id"
+            columns: ["commitment_id"]
+            isOneToOne: false
+            referencedRelation: "commitments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_commitment_payments_paid_by"
+            columns: ["paid_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commitments: {
         Row: {
           amount: number
           category: string
-          created_at: string | null
-          due_date: string | null
-          id: number
-          is_paid: boolean | null
-          is_shared: boolean | null
-          shared_with: number[] | null
+          created_at: string
+          group_id: string | null
+          id: string
+          recurring: boolean | null
+          shared: boolean | null
+          start_date: string | null
           title: string
           type: string
-          updated_at: string | null
-          user_id: number | null
+          updated_at: string
+          user_id: number
         }
         Insert: {
           amount: number
           category: string
-          created_at?: string | null
-          due_date?: string | null
-          id?: number
-          is_paid?: boolean | null
-          is_shared?: boolean | null
-          shared_with?: number[] | null
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          recurring?: boolean | null
+          shared?: boolean | null
+          start_date?: string | null
           title: string
           type: string
-          updated_at?: string | null
-          user_id?: number | null
+          updated_at?: string
+          user_id: number
         }
         Update: {
           amount?: number
           category?: string
-          created_at?: string | null
-          due_date?: string | null
-          id?: number
-          is_paid?: boolean | null
-          is_shared?: boolean | null
-          shared_with?: number[] | null
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          recurring?: boolean | null
+          shared?: boolean | null
+          start_date?: string | null
           title?: string
           type?: string
-          updated_at?: string | null
-          user_id?: number | null
+          updated_at?: string
+          user_id?: number
         }
         Relationships: [
           {
-            foreignKeyName: "commitments_user_id_fkey"
+            foreignKeyName: "fk_commitments_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monthly_income: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          month: string
+          updated_at: string
+          user_id: number
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          month: string
+          updated_at?: string
+          user_id: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          month?: string
+          updated_at?: string
+          user_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_monthly_income_user_id"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"

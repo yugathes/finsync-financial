@@ -4,7 +4,6 @@ import {
   users, 
   commitments, 
   monthlyIncome,
-  newCommitments,
   commitmentPayments,
   type User, 
   type InsertUser, 
@@ -12,8 +11,6 @@ import {
   type InsertCommitment,
   type MonthlyIncome,
   type InsertMonthlyIncome,
-  type NewCommitment,
-  type InsertNewCommitment,
   type CommitmentPayment,
   type InsertCommitmentPayment
 } from "@shared/schema";
@@ -31,19 +28,19 @@ export interface IStorage {
   setMonthlyIncome(userId: number, income: InsertMonthlyIncome): Promise<MonthlyIncome>;
   updateMonthlyIncome(userId: number, month: string, amount: string): Promise<MonthlyIncome>;
   
-  // Legacy Commitment methods (keeping for backward compatibility)
+  // Commitment methods (updated for new schema)
   getCommitmentsByUser(userId: number): Promise<Commitment[]>;
   createCommitment(commitment: InsertCommitment & { userId: number }): Promise<Commitment>;
-  updateCommitment(id: number, updates: Partial<Commitment>): Promise<Commitment>;
-  deleteCommitment(id: number): Promise<void>;
+  updateCommitment(id: string, updates: Partial<Commitment>): Promise<Commitment>;
+  deleteCommitment(id: string): Promise<void>;
   
   // Payment methods
   markCommitmentPaid(commitmentId: string, userId: number, month: string, amount: string): Promise<CommitmentPayment>;
   markCommitmentUnpaid(commitmentId: string, month: string): Promise<void>;
   getCommitmentPayments(userId: number, month: string): Promise<CommitmentPayment[]>;
   
-  // Toggle methods
-  toggleCommitmentPaid(id: number): Promise<Commitment>;
+  // Utility methods for commitment payment status
+  isCommitmentPaidForMonth(commitmentId: string, month: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -170,7 +167,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateCommitment(id: number, updates: Partial<Commitment>): Promise<Commitment> {
+  async updateCommitment(id: string, updates: Partial<Commitment>): Promise<Commitment> {
     try {
       const { data, error } = await supabase
         .from('commitments')
@@ -191,7 +188,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async deleteCommitment(id: number): Promise<void> {
+  async deleteCommitment(id: string): Promise<void> {
     try {
       const { error } = await supabase
         .from('commitments')
@@ -354,6 +351,21 @@ export class DatabaseStorage implements IStorage {
       return data || [];
     } catch (error) {
       return [];
+    }
+  }
+
+  async isCommitmentPaidForMonth(commitmentId: string, month: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .from('commitment_payments')
+        .select('id')
+        .eq('commitment_id', commitmentId)
+        .eq('month', month)
+        .single();
+      
+      return !!data && !error;
+    } catch (error) {
+      return false;
     }
   }
 }

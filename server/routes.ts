@@ -100,7 +100,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/commitments/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = req.params.id; // Use string ID for UUID
       const updates = req.body;
       const commitment = await storage.updateCommitment(id, updates);
       res.json(commitment);
@@ -111,7 +111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/commitments/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = req.params.id; // Use string ID for UUID
       await storage.deleteCommitment(id);
       res.json({ success: true });
     } catch (error) {

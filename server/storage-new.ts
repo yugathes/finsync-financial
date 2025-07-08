@@ -3,14 +3,14 @@ import { db, supabase } from './db';
 import { 
   users, 
   monthlyIncome,
-  newCommitments,
+  commitments,
   commitmentPayments,
   type User, 
   type InsertUser, 
   type MonthlyIncome,
   type InsertMonthlyIncome,
-  type NewCommitment,
-  type InsertNewCommitment,
+  type Commitment,
+  type InsertCommitment,
   type CommitmentPayment,
   type InsertCommitmentPayment
 } from "@shared/schema";
@@ -28,11 +28,11 @@ export interface INewStorage {
   setMonthlyIncome(userId: number, income: InsertMonthlyIncome): Promise<MonthlyIncome>;
   updateMonthlyIncome(userId: number, month: string, amount: string): Promise<MonthlyIncome>;
   
-  // New Commitment methods
-  getCommitmentsByUser(userId: number): Promise<NewCommitment[]>;
-  getCommitmentsForMonth(userId: number, month: string): Promise<(NewCommitment & { isPaid: boolean; amountPaid?: string })[]>;
-  createCommitment(commitment: InsertNewCommitment & { userId: number }): Promise<NewCommitment>;
-  updateCommitment(id: string, updates: Partial<NewCommitment>): Promise<NewCommitment>;
+  // Commitment methods
+  getCommitmentsByUser(userId: number): Promise<Commitment[]>;
+  getCommitmentsForMonth(userId: number, month: string): Promise<(Commitment & { isPaid: boolean; amountPaid?: string })[]>;
+  createCommitment(commitment: InsertCommitment & { userId: number }): Promise<Commitment>;
+  updateCommitment(id: string, updates: Partial<Commitment>): Promise<Commitment>;
   deleteCommitment(id: string): Promise<void>;
   
   // Payment methods
@@ -172,11 +172,11 @@ export class NewDatabaseStorage implements INewStorage {
     }
   }
 
-  // New Commitment methods
-  async getCommitmentsByUser(userId: number): Promise<NewCommitment[]> {
+  // Commitment methods
+  async getCommitmentsByUser(userId: number): Promise<Commitment[]> {
     try {
       const { data, error } = await supabase
-        .from('new_commitments')
+        .from('commitments')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
@@ -189,11 +189,11 @@ export class NewDatabaseStorage implements INewStorage {
     }
   }
 
-  async getCommitmentsForMonth(userId: number, month: string): Promise<(NewCommitment & { isPaid: boolean; amountPaid?: string })[]> {
+  async getCommitmentsForMonth(userId: number, month: string): Promise<(Commitment & { isPaid: boolean; amountPaid?: string })[]> {
     try {
       // Get all commitments for the user
       const { data: commitments, error: commitmentsError } = await supabase
-        .from('new_commitments')
+        .from('commitments')
         .select('*')
         .eq('user_id', userId);
       
@@ -225,11 +225,11 @@ export class NewDatabaseStorage implements INewStorage {
     }
   }
 
-  async createCommitment(commitment: InsertNewCommitment & { userId: number }): Promise<NewCommitment> {
+  async createCommitment(commitment: InsertCommitment & { userId: number }): Promise<Commitment> {
     try {
       const { userId, ...commitmentData } = commitment;
       const { data, error } = await supabase
-        .from('new_commitments')
+        .from('commitments')
         .insert({
           user_id: userId,
           ...commitmentData
@@ -245,10 +245,10 @@ export class NewDatabaseStorage implements INewStorage {
     }
   }
 
-  async updateCommitment(id: string, updates: Partial<NewCommitment>): Promise<NewCommitment> {
+  async updateCommitment(id: string, updates: Partial<Commitment>): Promise<Commitment> {
     try {
       const { data, error } = await supabase
-        .from('new_commitments')
+        .from('commitments')
         .update({
           ...updates,
           updated_at: new Date().toISOString()
@@ -268,7 +268,7 @@ export class NewDatabaseStorage implements INewStorage {
   async deleteCommitment(id: string): Promise<void> {
     try {
       const { error } = await supabase
-        .from('new_commitments')
+        .from('commitments')
         .delete()
         .eq('id', id);
       

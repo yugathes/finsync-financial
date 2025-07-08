@@ -1,116 +1,158 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { DollarSign } from 'lucide-react';
+import { supabase } from '@/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface MonthlyIncomeFormProps {
-  currentIncome?: number;
-  month: string;
-  onSubmit: (amount: number) => Promise<void>;
-  onCancel?: () => void;
-  isVisible: boolean;
-  currency?: string;
+  userId: number;
+  currentMonth?: string;
+  onIncomeUpdated?: (income: number) => void;
 }
 
-export const MonthlyIncomeForm: React.FC<MonthlyIncomeFormProps> = ({
-  currentIncome = 0,
-  month,
-  onSubmit,
-  onCancel,
-  isVisible,
-  currency = "MYR"
+export const MonthlyIncomeForm: React.FC<MonthlyIncomeFormProps> = ({ 
+  userId, 
+  currentMonth,
+  onIncomeUpdated 
 }) => {
-  const [amount, setAmount] = useState(currentIncome.toString());
+  const [income, setIncome] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const { toast } = useToast();
+
+  // Get current month in YYYY-MM format
+  const month = currentMonth || new Date().toISOString().slice(0, 7);
+
+  useEffect(() => {
+    fetchCurrentIncome();
+  }, [userId, month]);
+
+  const fetchCurrentIncome = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('monthly_income')
+        .select('amount')
+        .eq('user_id', userId)
+        .eq('month', month)
+        .single();
+
+      if (data) {
+        setIncome(data.amount.toString());
+      } else if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching income:', error);
+      }
+    } catch (error) {
+      console.error('Error fetching current income:', error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     
-    const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount < 0) {
-      setError('Please enter a valid amount');
+    if (!income || parseFloat(income) < 0) {
+      toast({
+        title: "Invalid Income",
+        description: "Please enter a valid income amount",
+        variant: "destructive"
+      });
       return;
     }
-    
+
     setLoading(true);
     
     try {
-      await onSubmit(numAmount);
+      const { error } = await supabase
+        .from('monthly_income')
+        .upsert({
+          user_id: userId,
+          month,
+          amount: parseFloat(income),
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Income Updated",
+        description: `Monthly income for ${month} has been set to $${income}`,
+      });
+
+      setIsEditing(false);
+      onIncomeUpdated?.(parseFloat(income));
     } catch (error: any) {
-      setError(error.message || 'Failed to update income');
+      console.error('Error saving income:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update income",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const formatMonth = (monthStr: string) => {
-    const [year, month] = monthStr.split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1);
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  };
-
-  if (!isVisible) return null;
+  const currentIncomeAmount = parseFloat(income) || 0;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold flex items-center gap-2 text-blue-800">
-            <DollarSign className="h-5 w-5" />
-            Monthly Income
-          </CardTitle>
-          <CardDescription>
-            Set your income for {formatMonth(month)}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          Monthly Income - {month}
+          {currentIncomeAmount > 0 && !isEditing && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setIsEditing(true)}
+            >
+              Edit
+            </Button>
           )}
-          
+        </CardTitle>
+        <CardDescription>
+          {currentIncomeAmount > 0 && !isEditing 
+            ? `Current income: $${currentIncomeAmount.toLocaleString()}`
+            : "Set your monthly income to track your balance"
+          }
+        </CardDescription>
+      </CardHeader>
+      
+      {(isEditing || currentIncomeAmount === 0) && (
+        <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="amount">Monthly Income</Label>
+              <Label htmlFor="income">Monthly Income</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                  {currency}
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                  $
                 </span>
                 <Input
-                  id="amount"
+                  id="income"
                   type="number"
-                  min="0"
                   step="0.01"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="pl-12"
+                  min="0"
                   placeholder="0.00"
+                  value={income}
+                  onChange={(e) => setIncome(e.target.value)}
+                  className="pl-8"
                   required
                 />
               </div>
             </div>
             
-            <div className="flex gap-2 pt-2">
-              <Button
-                type="submit"
-                disabled={loading}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                {loading ? 'Saving...' : 'Save Income'}
+            <div className="flex gap-2">
+              <Button type="submit" disabled={loading} className="flex-1">
+                {loading ? "Saving..." : "Save Income"}
               </Button>
-              {onCancel && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onCancel}
-                  disabled={loading}
-                  className="flex-1"
+              {isEditing && currentIncomeAmount > 0 && (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsEditing(false);
+                    setIncome(currentIncomeAmount.toString());
+                  }}
                 >
                   Cancel
                 </Button>
@@ -118,7 +160,7 @@ export const MonthlyIncomeForm: React.FC<MonthlyIncomeFormProps> = ({
             </div>
           </form>
         </CardContent>
-      </Card>
-    </div>
+      )}
+    </Card>
   );
 };
