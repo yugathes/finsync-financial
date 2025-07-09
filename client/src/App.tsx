@@ -16,11 +16,7 @@ import Header from "./components/Header";
 const queryClient = new QueryClient();
 
 const AppRoutes = () => {
-  const { session, loading } = useSession();
-
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  }
+  const { session } = useSession();
 
   return (
     <div className="flex flex-col min-h-screen">
