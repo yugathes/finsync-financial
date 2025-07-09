@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase/client';
 import { useSession } from '../hooks/useSession';
@@ -16,9 +16,11 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { session } = useSession();
 
-  if (session) {
-    navigate('/dashboard');
-  }
+  useEffect(() => {
+    if (session) {
+      navigate('/dashboard');
+    }
+  }, [session, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
