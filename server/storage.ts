@@ -1,5 +1,5 @@
 import { eq, desc } from 'drizzle-orm';
-import { db, supabase } from './db';
+import { supabase } from './db';
 import { 
   users, 
   commitments, 

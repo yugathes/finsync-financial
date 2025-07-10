@@ -15,14 +15,13 @@ export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   }
 });
 
-// Since we don't have the direct database password, we'll use Supabase's REST API approach
-// For now, we'll keep the Drizzle setup but use DATABASE_URL if available
-let client;
+// For this project, we'll primarily use Supabase client
+// Only initialize drizzle if we have a proper DATABASE_URL
+let db: any = null;
+
 if (process.env.DATABASE_URL) {
-  client = postgres(process.env.DATABASE_URL, { prepare: false });
-} else {
-  // Create a minimal client that will work with Supabase's REST API
-  client = postgres('postgresql://postgres:placeholder@localhost:5432/postgres', { prepare: false });
+  const client = postgres(process.env.DATABASE_URL, { prepare: false });
+  db = drizzle(client, { schema });
 }
 
-export const db = drizzle(client, { schema });
+export { db };
