@@ -1,6 +1,5 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
 import { supabase } from "./db";
 import { insertCommitmentSchema } from "@shared/schema";
 
@@ -55,8 +54,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/users/:id", async (req, res) => {
     try {
       const userId = parseInt(req.params.id);
-      const user = await storage.getUser(userId);
-      if (!user) {
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error || !user) {
         return res.status(404).json({ error: "User not found" });
       }
       res.json(user);
@@ -69,7 +73,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = parseInt(req.params.id);
       const { income } = req.body;
-      const user = await storage.updateUserIncome(userId, income);
+      const { data: user, error } = await supabase
+        .from('users')
+        .update({ monthly_income: income, updated_at: new Date().toISOString() })
+        .eq('id', userId)
+        .select()
+        .single();
+      
+      if (error) {
+        throw error;
+      }
       res.json(user);
     } catch (error) {
       res.status(500).json({ error: "Failed to update income" });
@@ -80,7 +93,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/commitments/user/:userId", async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
-      const commitments = await storage.getCommitmentsByUser(userId);
+      const { data: commitments, error } = await supabase
+        .from('commitments')
+        .select('*')
+        .eq('user_id', userId);
+      
+      if (error) {
+        throw error;
+      }
       res.json(commitments);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch commitments" });
@@ -91,7 +111,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const commitmentData = insertCommitmentSchema.parse(req.body);
       const { userId } = req.body;
-      const commitment = await storage.createCommitment({ ...commitmentData, userId });
+      const { data: commitment, error } = await supabase
+        .from('commitments')
+        .insert({ ...commitmentData, user_id: userId })
+        .select()
+        .single();
+      
+      if (error) {
+        throw error;
+      }
       res.json(commitment);
     } catch (error) {
       res.status(400).json({ error: "Invalid commitment data" });
@@ -102,7 +130,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = req.params.id; // Use string ID for UUID
       const updates = req.body;
-      const commitment = await storage.updateCommitment(id, updates);
+      const { data: commitment, error } = await supabase
+        .from('commitments')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        throw error;
+      }
       res.json(commitment);
     } catch (error) {
       res.status(500).json({ error: "Failed to update commitment" });
@@ -112,7 +149,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/commitments/:id", async (req, res) => {
     try {
       const id = req.params.id; // Use string ID for UUID
-      await storage.deleteCommitment(id);
+      const { error } = await supabase
+        .from('commitments')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        throw error;
+      }
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete commitment" });
@@ -121,9 +165,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/commitments/:id/toggle", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
-      const commitment = await storage.toggleCommitmentPaid(id);
-      res.json(commitment);
+      const id = req.params.id;
+      // This route needs to be implemented based on business logic
+      res.status(501).json({ error: "Toggle functionality not yet implemented with Supabase" });
     } catch (error) {
       res.status(500).json({ error: "Failed to toggle commitment" });
     }
