@@ -172,4 +172,17 @@
   .transition-bounce {
     transition: var(--transition-bounce);
   }
+  
+  /* Additional animations for better UX */
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out;
+  }
+  
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+  
+  .animate-scale-in {
+    animation: scale-in 0.2s ease-out;
+  }
 }
