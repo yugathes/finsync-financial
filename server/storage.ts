@@ -8,7 +8,7 @@ import {
   type InsertMonthlyIncome,
   type CommitmentPayment,
   type InsertCommitmentPayment
-} from "@shared/schema";
+} from "@db/schema";
 
 
 // Unified storage interface for comprehensive commitment management

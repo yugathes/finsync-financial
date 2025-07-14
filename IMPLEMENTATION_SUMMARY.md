@@ -121,7 +121,7 @@ client/src/
 server/
 ├── storage-new.ts (comprehensive storage layer)
 ├── routes-new.ts (new API endpoints)
-shared/
+db/
 └── schema.ts (updated with new tables)
 ```
 

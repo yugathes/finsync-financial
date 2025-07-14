@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import * as schema from '@shared/schema';
+import * as schema from '@db/schema';
 
 // Use the actual Supabase project URL and anon key
 const supabaseUrl = 'https://ezcatmlmwyavjbsemabx.supabase.co';

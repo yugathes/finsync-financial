@@ -13,12 +13,15 @@ export default defineConfig(({ mode }) => ({
   ].filter(Boolean),
   server: {
     host: "::",
-    port: 8080
+    port: 6000,
+    proxy: {
+      '/api': 'http://localhost:5000'
+    },
   },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
-      "@shared": path.resolve(import.meta.dirname, "shared"),
+      "@db": path.resolve(import.meta.dirname, "db"),
       "@assets": path.resolve(import.meta.dirname, "attached_assets"),
     },
   },
