@@ -21,6 +21,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Helper to sync user to backend
+    const syncUser = async (user: User | null) => {
+      if (!user) return;
+      try {
+        await fetch('/api/users/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: user.id, email: user.email })
+        });
+      } catch (err) {
+        // Log error but don't block UI
+        console.error('Failed to sync user to backend', err);
+      }
+    };
+
     let mounted = true;
     
     const getSession = async () => {
@@ -54,6 +69,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setLoading(false);
         }
       }
+      if (session?.user) {
+        syncUser(session.user);
+      }
     };
 
     getSession();
@@ -65,6 +83,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
+        }
+        if (session?.user) {
+          syncUser(session.user);
         }
       }
     );
