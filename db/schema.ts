@@ -3,10 +3,9 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
+  id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
-  password: text("password").notNull(),
+  password: text("password"),
   monthlyIncome: numeric("monthly_income", { precision: 10, scale: 2 }).default("0"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -15,7 +14,7 @@ export const users = pgTable("users", {
 // Monthly income tracking (new comprehensive approach)
 export const monthlyIncome = pgTable("monthly_income", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
   month: text("month").notNull(), // e.g., '2025-07'
   amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -25,7 +24,7 @@ export const monthlyIncome = pgTable("monthly_income", {
 // Updated commitments table matching the database structure
 export const commitments = pgTable("commitments", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
   type: text("type").notNull(), // 'static' | 'dynamic'
   title: text("title").notNull(),
   category: text("category").notNull(),
@@ -43,14 +42,14 @@ export const commitmentPayments = pgTable("commitment_payments", {
   id: uuid("id").primaryKey().defaultRandom(),
   commitmentId: uuid("commitment_id").references(() => commitments.id).notNull(),
   month: text("month").notNull(), // e.g., '2025-07'
-  paidBy: integer("paid_by").references(() => users.id).notNull(),
+  paidBy: uuid("paid_by").references(() => users.id).notNull(),
   amountPaid: numeric("amount_paid", { precision: 10, scale: 2 }).notNull(),
   paidAt: timestamp("paid_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow()
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
+  email: true,
   password: true,
   monthlyIncome: true,
 });
