@@ -1,13 +1,8 @@
-import { eq, desc } from 'drizzle-orm';
 import { supabase } from './db';
-import { 
-  users, 
-  commitments, 
-  monthlyIncome,
-  commitmentPayments,
-  type User, 
-  type InsertUser, 
-  type Commitment, 
+import {
+  type User,
+  type InsertUser,
+  type Commitment,
   type InsertCommitment,
   type MonthlyIncome,
   type InsertMonthlyIncome,
@@ -15,35 +10,39 @@ import {
   type InsertCommitmentPayment
 } from "@shared/schema";
 
-// Enhanced storage interface for comprehensive commitment management
+
+// Unified storage interface for comprehensive commitment management
 export interface IStorage {
   // User methods
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserIncome(userId: number, income: string): Promise<User>;
-  
+
   // Monthly Income methods
   getMonthlyIncome(userId: number, month: string): Promise<MonthlyIncome | undefined>;
   setMonthlyIncome(userId: number, income: InsertMonthlyIncome): Promise<MonthlyIncome>;
   updateMonthlyIncome(userId: number, month: string, amount: string): Promise<MonthlyIncome>;
-  
-  // Commitment methods (updated for new schema)
+
+  // Commitment methods
   getCommitmentsByUser(userId: number): Promise<Commitment[]>;
+  getCommitmentsForMonth(userId: number, month: string): Promise<(Commitment & { isPaid: boolean; amountPaid?: string })[]>;
   createCommitment(commitment: InsertCommitment & { userId: number }): Promise<Commitment>;
   updateCommitment(id: string, updates: Partial<Commitment>): Promise<Commitment>;
   deleteCommitment(id: string): Promise<void>;
-  
+
   // Payment methods
   markCommitmentPaid(commitmentId: string, userId: number, month: string, amount: string): Promise<CommitmentPayment>;
   markCommitmentUnpaid(commitmentId: string, month: string): Promise<void>;
   getCommitmentPayments(userId: number, month: string): Promise<CommitmentPayment[]>;
-  
-  // Utility methods for commitment payment status
+
+  // Utility methods
   isCommitmentPaidForMonth(commitmentId: string, month: string): Promise<boolean>;
 }
 
-export class DatabaseStorage implements IStorage {
+
+// Unified storage implementation
+class MainStorage implements IStorage {
   // User methods
   async getUser(id: number): Promise<User | undefined> {
     try {
@@ -52,15 +51,10 @@ export class DatabaseStorage implements IStorage {
         .select('*')
         .eq('id', id)
         .single();
-      
-      if (error) {
-        console.error('Error fetching user:', error);
-        return undefined;
-      }
-      
+      if (error && error.code !== 'PGRST116') throw error;
       return data || undefined;
     } catch (error) {
-      console.error('Database error:', error);
+      console.error('Error fetching user:', error);
       return undefined;
     }
   }
@@ -72,15 +66,10 @@ export class DatabaseStorage implements IStorage {
         .select('*')
         .eq('username', username)
         .single();
-      
-      if (error) {
-        console.error('Error fetching user by username:', error);
-        return undefined;
-      }
-      
+      if (error && error.code !== 'PGRST116') throw error;
       return data || undefined;
     } catch (error) {
-      console.error('Database error:', error);
+      console.error('Error fetching user by username:', error);
       return undefined;
     }
   }
@@ -92,15 +81,10 @@ export class DatabaseStorage implements IStorage {
         .insert(insertUser)
         .select()
         .single();
-      
-      if (error) {
-        console.error('Error creating user:', error);
-        throw new Error(error.message);
-      }
-      
+      if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Database error:', error);
+      console.error('Error creating user:', error);
       throw error;
     }
   }
@@ -109,131 +93,14 @@ export class DatabaseStorage implements IStorage {
     try {
       const { data, error } = await supabase
         .from('users')
-        .update({ monthlyIncome: income, updatedAt: new Date().toISOString() })
+        .update({ monthly_income: income, updated_at: new Date().toISOString() })
         .eq('id', userId)
         .select()
         .single();
-      
-      if (error) {
-        console.error('Error updating user income:', error);
-        throw new Error(error.message);
-      }
-      
+      if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Database error:', error);
-      throw error;
-    }
-  }
-
-  // Commitment methods
-  async getCommitmentsByUser(userId: number): Promise<Commitment[]> {
-    try {
-      const { data, error } = await supabase
-        .from('commitments')
-        .select('*')
-        .eq('userId', userId)
-        .order('createdAt', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching commitments:', error);
-        return [];
-      }
-      
-      return data || [];
-    } catch (error) {
-      console.error('Database error:', error);
-      return [];
-    }
-  }
-
-  async createCommitment(commitment: InsertCommitment & { userId: number }): Promise<Commitment> {
-    try {
-      const { data, error } = await supabase
-        .from('commitments')
-        .insert(commitment)
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Error creating commitment:', error);
-        throw new Error(error.message);
-      }
-      
-      return data;
-    } catch (error) {
-      console.error('Database error:', error);
-      throw error;
-    }
-  }
-
-  async updateCommitment(id: string, updates: Partial<Commitment>): Promise<Commitment> {
-    try {
-      const { data, error } = await supabase
-        .from('commitments')
-        .update({ ...updates, updatedAt: new Date().toISOString() })
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Error updating commitment:', error);
-        throw new Error(error.message);
-      }
-      
-      return data;
-    } catch (error) {
-      console.error('Database error:', error);
-      throw error;
-    }
-  }
-
-  async deleteCommitment(id: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('commitments')
-        .delete()
-        .eq('id', id);
-      
-      if (error) {
-        console.error('Error deleting commitment:', error);
-        throw new Error(error.message);
-      }
-    } catch (error) {
-      console.error('Database error:', error);
-      throw error;
-    }
-  }
-
-  async toggleCommitmentPaid(id: number): Promise<Commitment> {
-    try {
-      // First get the current commitment
-      const { data: commitment, error: fetchError } = await supabase
-        .from('commitments')
-        .select('*')
-        .eq('id', id)
-        .single();
-      
-      if (fetchError || !commitment) {
-        throw new Error('Commitment not found');
-      }
-      
-      // Then update it
-      const { data, error } = await supabase
-        .from('commitments')
-        .update({ isPaid: !commitment.isPaid, updatedAt: new Date().toISOString() })
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Error toggling commitment paid status:', error);
-        throw new Error(error.message);
-      }
-      
-      return data;
-    } catch (error) {
-      console.error('Database error:', error);
+      console.error('Error updating user income:', error);
       throw error;
     }
   }
@@ -244,16 +111,13 @@ export class DatabaseStorage implements IStorage {
       const { data, error } = await supabase
         .from('monthly_income')
         .select('*')
-        .eq('userId', userId)
+        .eq('user_id', userId)
         .eq('month', month)
         .single();
-      
-      if (error) {
-        return undefined;
-      }
-      
+      if (error && error.code !== 'PGRST116') throw error;
       return data || undefined;
     } catch (error) {
+      console.error('Error fetching monthly income:', error);
       return undefined;
     }
   }
@@ -262,16 +126,17 @@ export class DatabaseStorage implements IStorage {
     try {
       const { data, error } = await supabase
         .from('monthly_income')
-        .insert({ ...income, userId })
+        .upsert({
+          user_id: userId,
+          ...income,
+          updated_at: new Date().toISOString()
+        })
         .select()
         .single();
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
+      if (error) throw error;
       return data;
     } catch (error) {
+      console.error('Error setting monthly income:', error);
       throw error;
     }
   }
@@ -280,18 +145,119 @@ export class DatabaseStorage implements IStorage {
     try {
       const { data, error } = await supabase
         .from('monthly_income')
-        .update({ amount, updatedAt: new Date().toISOString() })
-        .eq('userId', userId)
-        .eq('month', month)
+        .upsert({
+          user_id: userId,
+          month,
+          amount,
+          updated_at: new Date().toISOString()
+        })
         .select()
         .single();
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
+      if (error) throw error;
       return data;
     } catch (error) {
+      console.error('Error updating monthly income:', error);
+      throw error;
+    }
+  }
+
+  // Commitment methods
+  async getCommitmentsByUser(userId: number): Promise<Commitment[]> {
+    try {
+      const { data, error } = await supabase
+        .from('commitments')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching commitments:', error);
+      return [];
+    }
+  }
+
+  async getCommitmentsForMonth(userId: number, month: string): Promise<(Commitment & { isPaid: boolean; amountPaid?: string })[]> {
+    try {
+      // Get all commitments for the user
+      const { data: commitments, error: commitmentsError } = await supabase
+        .from('commitments')
+        .select('*')
+        .eq('user_id', userId);
+      if (commitmentsError) throw commitmentsError;
+
+      // Get all payments for this month
+      const { data: payments, error: paymentsError } = await supabase
+        .from('commitment_payments')
+        .select('*')
+        .eq('paid_by', userId)
+        .eq('month', month);
+      if (paymentsError) throw paymentsError;
+
+      // Combine commitments with payment status
+      const commitmentsWithPayments = (commitments || []).map(commitment => {
+        const payment = payments?.find(p => p.commitment_id === commitment.id);
+        return {
+          ...commitment,
+          isPaid: !!payment,
+          amountPaid: payment?.amount_paid
+        };
+      });
+
+      return commitmentsWithPayments;
+    } catch (error) {
+      console.error('Error fetching commitments for month:', error);
+      return [];
+    }
+  }
+
+  async createCommitment(commitment: InsertCommitment & { userId: number }): Promise<Commitment> {
+    try {
+      const { userId, ...commitmentData } = commitment;
+      const { data, error } = await supabase
+        .from('commitments')
+        .insert({
+          user_id: userId,
+          ...commitmentData
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating commitment:', error);
+      throw error;
+    }
+  }
+
+  async updateCommitment(id: string, updates: Partial<Commitment>): Promise<Commitment> {
+    try {
+      const { data, error } = await supabase
+        .from('commitments')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating commitment:', error);
+      throw error;
+    }
+  }
+
+  async deleteCommitment(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('commitments')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting commitment:', error);
       throw error;
     }
   }
@@ -301,21 +267,18 @@ export class DatabaseStorage implements IStorage {
     try {
       const { data, error } = await supabase
         .from('commitment_payments')
-        .insert({
-          commitmentId,
+        .upsert({
+          commitment_id: commitmentId,
+          paid_by: userId,
           month,
-          paidBy: userId,
-          amountPaid: amount
+          amount_paid: amount
         })
         .select()
         .single();
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-      
+      if (error) throw error;
       return data;
     } catch (error) {
+      console.error('Error marking commitment as paid:', error);
       throw error;
     }
   }
@@ -325,13 +288,11 @@ export class DatabaseStorage implements IStorage {
       const { error } = await supabase
         .from('commitment_payments')
         .delete()
-        .eq('commitmentId', commitmentId)
+        .eq('commitment_id', commitmentId)
         .eq('month', month);
-      
-      if (error) {
-        throw new Error(error.message);
-      }
+      if (error) throw error;
     } catch (error) {
+      console.error('Error marking commitment as unpaid:', error);
       throw error;
     }
   }
@@ -341,15 +302,12 @@ export class DatabaseStorage implements IStorage {
       const { data, error } = await supabase
         .from('commitment_payments')
         .select('*')
-        .eq('paidBy', userId)
+        .eq('paid_by', userId)
         .eq('month', month);
-      
-      if (error) {
-        return [];
-      }
-      
+      if (error) throw error;
       return data || [];
     } catch (error) {
+      console.error('Error fetching commitment payments:', error);
       return [];
     }
   }
@@ -362,7 +320,6 @@ export class DatabaseStorage implements IStorage {
         .eq('commitment_id', commitmentId)
         .eq('month', month)
         .single();
-      
       return !!data && !error;
     } catch (error) {
       return false;
@@ -370,4 +327,4 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new MainStorage();
