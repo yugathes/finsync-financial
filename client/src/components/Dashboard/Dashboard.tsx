@@ -3,7 +3,7 @@ import { BalanceCard } from "./BalanceCard";
 import { CommitmentsList } from "./CommitmentsList";
 import { CommitmentForm } from "../Commitments/CommitmentForm";
 import { IncomeModal } from "./IncomeModal";
-import { FloatingActionButton } from "../UI/FloatingActionButton";
+import { FloatingActionButton } from "../ui/FloatingActionButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle, TrendingUp, Calendar } from "lucide-react";

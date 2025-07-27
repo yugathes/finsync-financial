@@ -4,7 +4,7 @@ import { BalanceCard } from '../components/Dashboard/BalanceCard';
 import { CommitmentList, CommitmentWithStatus } from '../components/Commitments/CommitmentList';
 import { NewCommitmentForm, NewCommitmentData } from '../components/Commitments/NewCommitmentForm';
 import { MonthlyIncomeForm } from '../components/Income/MonthlyIncomeForm';
-import { FloatingActionButton } from '../components/UI/FloatingActionButton';
+import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
