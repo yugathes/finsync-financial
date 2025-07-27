@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => ({
   ].filter(Boolean),
   server: {
     host: "::",
-    port: 6000,
+    port: 8080,
     proxy: {
       '/api': 'http://localhost:5000'
     },
