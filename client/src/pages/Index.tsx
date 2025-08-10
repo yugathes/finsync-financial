@@ -1,10 +1,12 @@
 import { Layout } from "@/components/Layout";
-import { Dashboard } from "@/components/Dashboard/Dashboard";
+import { RefactoredDashboard } from "@/components/Dashboard/RefactoredDashboard";
+// import { NewDashboard } from "./NewDashboard";
 
 const Index = () => {
   return (
     <Layout title="FinSync - Your Financial Commitment Tracker">
-      <Dashboard />
+      {/* <Dashboard /> */}
+      <RefactoredDashboard />
     </Layout>
   );
 };

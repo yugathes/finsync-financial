@@ -4,6 +4,7 @@ import { Request, Response } from 'express';
 // Example: Sync user after login
 export async function syncUser(req: Request, res: Response) {
   try {
+    console.log('Syncing user:', req.body);
     const { id, email } = req.body;
     if (!id || !email) {
       return res.status(400).json({ error: 'Missing user id or email' });
@@ -43,6 +44,7 @@ export async function syncUser(req: Request, res: Response) {
       }
       resultUser = updatedUser;
     }
+    console.log('User synced:', resultUser);
     res.json(resultUser);
   } catch (error) {
     res.status(500).json({ error: 'Failed to sync user', details: error });

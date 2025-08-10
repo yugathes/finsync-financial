@@ -25,11 +25,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const syncUser = async (user: User | null) => {
       if (!user) return;
       try {
-        await fetch('/api/users/sync', {
+        const response = await fetch('/api/users/sync', {
+          headers: {
+            'Content-Type': 'application/json',
+          },
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: user.id, email: user.email })
+          body: JSON.stringify({ id: user.id, email: user.email }),
         });
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.details || error.error || 'Request failed');
+        }
+        console.log('User synced to backend:', user.id);
       } catch (err) {
         // Log error but don't block UI
         console.error('Failed to sync user to backend', err);

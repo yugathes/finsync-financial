@@ -1,3 +1,4 @@
+import { start } from 'repl';
 import { storage } from '../storage';
 import { Request, Response } from 'express';
 
@@ -13,8 +14,9 @@ export async function getCommitmentsByUser(req: Request, res: Response) {
 
 export async function getCommitmentsForMonth(req: Request, res: Response) {
   try {
-    const userId = parseInt(req.params.userId);
+    const userId = req.params.userId;
     const month = req.params.month;
+    console.log('Fetching commitments for user:', userId, 'month:', month);
     const commitments = await storage.getCommitmentsForMonth(userId, month);
     res.json(commitments);
   } catch (error) {
@@ -37,7 +39,7 @@ export async function createCommitment(req: Request, res: Response) {
       recurring: recurring ?? true,
       shared: shared ?? false,
       groupId,
-      startDate
+      start_date: startDate
     });
     res.json(commitment);
   } catch (error) {

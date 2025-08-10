@@ -4,7 +4,8 @@ export async function getDashboardSummary(req: Request, res: Response) {
   try {
     const { storage } = await import("../storage");
     const getCurrentMonth = () => new Date().toISOString().slice(0, 7);
-    const userId = parseInt(req.params.userId);
+    const userId = req.params.userId;
+    console.log('Fetching dashboard summary for user:', userId);
     const month = req.params.month || getCurrentMonth();
     const income = await storage.getMonthlyIncome(userId, month);
     const commitments = await storage.getCommitmentsForMonth(userId, month);

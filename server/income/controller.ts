@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 
 export async function getMonthlyIncome(req: Request, res: Response) {
   try {
-    const userId = parseInt(req.params.userId);
+    const userId = req.params.userId;
     const month = req.params.month;
     const income = await storage.getMonthlyIncome(userId, month);
     if (!income) {

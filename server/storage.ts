@@ -20,13 +20,13 @@ export interface IStorage {
   updateUserIncome(userId: number, income: string): Promise<User>;
 
   // Monthly Income methods
-  getMonthlyIncome(userId: number, month: string): Promise<MonthlyIncome | undefined>;
+  getMonthlyIncome(userId: string, month: string): Promise<MonthlyIncome | undefined>;
   setMonthlyIncome(userId: number, income: InsertMonthlyIncome): Promise<MonthlyIncome>;
   updateMonthlyIncome(userId: number, month: string, amount: string): Promise<MonthlyIncome>;
 
   // Commitment methods
   getCommitmentsByUser(userId: number): Promise<Commitment[]>;
-  getCommitmentsForMonth(userId: number, month: string): Promise<(Commitment & { isPaid: boolean; amountPaid?: string })[]>;
+  getCommitmentsForMonth(userId: string, month: string): Promise<(Commitment & { isPaid: boolean; amountPaid?: string })[]>;
   createCommitment(commitment: InsertCommitment & { userId: number }): Promise<Commitment>;
   updateCommitment(id: string, updates: Partial<Commitment>): Promise<Commitment>;
   deleteCommitment(id: string): Promise<void>;
@@ -106,7 +106,7 @@ class MainStorage implements IStorage {
   }
 
   // Monthly Income methods
-  async getMonthlyIncome(userId: number, month: string): Promise<MonthlyIncome | undefined> {
+  async getMonthlyIncome(userId: string, month: string): Promise<MonthlyIncome | undefined> {
     try {
       const { data, error } = await supabase
         .from('monthly_income')
@@ -177,13 +177,15 @@ class MainStorage implements IStorage {
     }
   }
 
-  async getCommitmentsForMonth(userId: number, month: string): Promise<(Commitment & { isPaid: boolean; amountPaid?: string })[]> {
+  async getCommitmentsForMonth(userId: string, month: string): Promise<(Commitment & { isPaid: boolean; amountPaid?: string })[]> {
     try {
+      console.log('Fetching commitments for user:', userId, 'month:', month);
       // Get all commitments for the user
       const { data: commitments, error: commitmentsError } = await supabase
         .from('commitments')
         .select('*')
         .eq('user_id', userId);
+      console.log('Commitments fetched:', commitments);
       if (commitmentsError) throw commitmentsError;
 
       // Get all payments for this month
