@@ -14,7 +14,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User routes
-  app.use("/api/users", userRoutes);
+  app.use("/api/user", userRoutes);
   // Commitment routes
   app.use("/api/commitments", commitmentRoutes);
   // Income routes

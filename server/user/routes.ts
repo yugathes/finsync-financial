@@ -3,7 +3,7 @@ import { syncUser } from './controller';
 
 const router = Router();
 
-router.post('/api/sync', syncUser);
+router.post('/sync', syncUser);
 // Add more user routes here
 
 export default router;

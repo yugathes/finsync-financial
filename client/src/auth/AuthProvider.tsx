@@ -25,7 +25,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const syncUser = async (user: User | null) => {
       if (!user) return;
       try {
-        const response = await fetch('/api/users/sync', {
+        const response = await fetch('/api/user/sync', {
           headers: {
             'Content-Type': 'application/json',
           },
