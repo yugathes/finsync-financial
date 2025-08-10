@@ -39,7 +39,7 @@ export async function createCommitment(req: Request, res: Response) {
       recurring: recurring ?? true,
       shared: shared ?? false,
       groupId,
-      start_date: startDate
+      startDate: startDate
     });
     res.json(commitment);
   } catch (error) {

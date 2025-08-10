@@ -5,4 +5,11 @@ server/public
 vite.config.ts.*
 *.tar.gz
 .env
-.env
+
+# Prisma
+node_modules/.prisma
+*.db
+
+# Validation and backup files
+validate-migration.sh
+*.backup

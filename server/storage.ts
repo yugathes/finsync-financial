@@ -1,4 +1,4 @@
-import { supabase } from './db';
+import { prisma } from './db';
 import {
   type User,
   type InsertUser,
@@ -8,7 +8,7 @@ import {
   type InsertMonthlyIncome,
   type CommitmentPayment,
   type InsertCommitmentPayment
-} from "@db/schema";
+} from "../lib/types";
 
 
 // Unified storage interface for comprehensive commitment management
@@ -46,13 +46,10 @@ class MainStorage implements IStorage {
   // User methods
   async getUser(id: number): Promise<User | undefined> {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', id)
-        .single();
-      if (error && error.code !== 'PGRST116') throw error;
-      return data || undefined;
+      const user = await prisma.user.findUnique({
+        where: { id: String(id) }
+      });
+      return user || undefined;
     } catch (error) {
       console.error('Error fetching user:', error);
       return undefined;
@@ -61,13 +58,10 @@ class MainStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('username', username)
-        .single();
-      if (error && error.code !== 'PGRST116') throw error;
-      return data || undefined;
+      const user = await prisma.user.findFirst({
+        where: { email: username } // Assuming username is email
+      });
+      return user || undefined;
     } catch (error) {
       console.error('Error fetching user by username:', error);
       return undefined;
@@ -76,13 +70,10 @@ class MainStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .insert(insertUser)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      const user = await prisma.user.create({
+        data: insertUser
+      });
+      return user;
     } catch (error) {
       console.error('Error creating user:', error);
       throw error;
@@ -91,14 +82,14 @@ class MainStorage implements IStorage {
 
   async updateUserIncome(userId: number, income: string): Promise<User> {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .update({ monthly_income: income, updated_at: new Date().toISOString() })
-        .eq('id', userId)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      const user = await prisma.user.update({
+        where: { id: String(userId) },
+        data: { 
+          monthlyIncome: income,
+          updatedAt: new Date()
+        }
+      });
+      return user;
     } catch (error) {
       console.error('Error updating user income:', error);
       throw error;
@@ -108,14 +99,13 @@ class MainStorage implements IStorage {
   // Monthly Income methods
   async getMonthlyIncome(userId: string, month: string): Promise<MonthlyIncome | undefined> {
     try {
-      const { data, error } = await supabase
-        .from('monthly_income')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('month', month)
-        .single();
-      if (error && error.code !== 'PGRST116') throw error;
-      return data || undefined;
+      const income = await prisma.monthlyIncome.findFirst({
+        where: {
+          userId: userId,
+          month: month
+        }
+      });
+      return income || undefined;
     } catch (error) {
       console.error('Error fetching monthly income:', error);
       return undefined;
@@ -124,17 +114,32 @@ class MainStorage implements IStorage {
 
   async setMonthlyIncome(userId: number, income: InsertMonthlyIncome): Promise<MonthlyIncome> {
     try {
-      const { data, error } = await supabase
-        .from('monthly_income')
-        .upsert({
-          user_id: userId,
-          ...income,
-          updated_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      const existingIncome = await prisma.monthlyIncome.findFirst({
+        where: {
+          userId: String(userId),
+          month: income.month
+        }
+      });
+
+      if (existingIncome) {
+        const monthlyIncome = await prisma.monthlyIncome.update({
+          where: { id: existingIncome.id },
+          data: {
+            amount: income.amount,
+            updatedAt: new Date()
+          }
+        });
+        return monthlyIncome;
+      } else {
+        const monthlyIncome = await prisma.monthlyIncome.create({
+          data: {
+            userId: String(userId),
+            month: income.month,
+            amount: income.amount
+          }
+        });
+        return monthlyIncome;
+      }
     } catch (error) {
       console.error('Error setting monthly income:', error);
       throw error;
@@ -143,18 +148,32 @@ class MainStorage implements IStorage {
 
   async updateMonthlyIncome(userId: number, month: string, amount: string): Promise<MonthlyIncome> {
     try {
-      const { data, error } = await supabase
-        .from('monthly_income')
-        .upsert({
-          user_id: userId,
-          month,
-          amount,
-          updated_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      const existingIncome = await prisma.monthlyIncome.findFirst({
+        where: {
+          userId: String(userId),
+          month: month
+        }
+      });
+
+      if (existingIncome) {
+        const monthlyIncome = await prisma.monthlyIncome.update({
+          where: { id: existingIncome.id },
+          data: {
+            amount: amount,
+            updatedAt: new Date()
+          }
+        });
+        return monthlyIncome;
+      } else {
+        const monthlyIncome = await prisma.monthlyIncome.create({
+          data: {
+            userId: String(userId),
+            month: month,
+            amount: amount
+          }
+        });
+        return monthlyIncome;
+      }
     } catch (error) {
       console.error('Error updating monthly income:', error);
       throw error;
@@ -164,13 +183,11 @@ class MainStorage implements IStorage {
   // Commitment methods
   async getCommitmentsByUser(userId: number): Promise<Commitment[]> {
     try {
-      const { data, error } = await supabase
-        .from('commitments')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
+      const commitments = await prisma.commitment.findMany({
+        where: { userId: String(userId) },
+        orderBy: { createdAt: 'desc' }
+      });
+      return commitments || [];
     } catch (error) {
       console.error('Error fetching commitments:', error);
       return [];
@@ -180,29 +197,27 @@ class MainStorage implements IStorage {
   async getCommitmentsForMonth(userId: string, month: string): Promise<(Commitment & { isPaid: boolean; amountPaid?: string })[]> {
     try {
       console.log('Fetching commitments for user:', userId, 'month:', month);
-      // Get all commitments for the user
-      const { data: commitments, error: commitmentsError } = await supabase
-        .from('commitments')
-        .select('*')
-        .eq('user_id', userId);
+      
+      // Get all commitments for the user with payments
+      const commitments = await prisma.commitment.findMany({
+        where: { userId: userId },
+        include: {
+          payments: {
+            where: { month: month }
+          }
+        }
+      });
+      
       console.log('Commitments fetched:', commitments);
-      if (commitmentsError) throw commitmentsError;
 
-      // Get all payments for this month
-      const { data: payments, error: paymentsError } = await supabase
-        .from('commitment_payments')
-        .select('*')
-        .eq('paid_by', userId)
-        .eq('month', month);
-      if (paymentsError) throw paymentsError;
-
-      // Combine commitments with payment status
-      const commitmentsWithPayments = (commitments || []).map(commitment => {
-        const payment = payments?.find(p => p.commitment_id === commitment.id);
+      // Map commitments with payment status
+      const commitmentsWithPayments = commitments.map((commitment: any) => {
+        const payment = commitment.payments?.find((p: any) => p.month === month);
         return {
           ...commitment,
+          payments: undefined, // Remove the payments array from the result
           isPaid: !!payment,
-          amountPaid: payment?.amount_paid
+          amountPaid: payment?.amountPaid?.toString()
         };
       });
 
@@ -216,16 +231,13 @@ class MainStorage implements IStorage {
   async createCommitment(commitment: InsertCommitment & { userId: number }): Promise<Commitment> {
     try {
       const { userId, ...commitmentData } = commitment;
-      const { data, error } = await supabase
-        .from('commitments')
-        .insert({
-          user_id: userId,
+      const newCommitment = await prisma.commitment.create({
+        data: {
+          userId: String(userId),
           ...commitmentData
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+        }
+      });
+      return newCommitment;
     } catch (error) {
       console.error('Error creating commitment:', error);
       throw error;
@@ -234,17 +246,14 @@ class MainStorage implements IStorage {
 
   async updateCommitment(id: string, updates: Partial<Commitment>): Promise<Commitment> {
     try {
-      const { data, error } = await supabase
-        .from('commitments')
-        .update({
+      const commitment = await prisma.commitment.update({
+        where: { id: id },
+        data: {
           ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+          updatedAt: new Date()
+        }
+      });
+      return commitment;
     } catch (error) {
       console.error('Error updating commitment:', error);
       throw error;
@@ -253,11 +262,9 @@ class MainStorage implements IStorage {
 
   async deleteCommitment(id: string): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('commitments')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
+      await prisma.commitment.delete({
+        where: { id: id }
+      });
     } catch (error) {
       console.error('Error deleting commitment:', error);
       throw error;
@@ -267,18 +274,33 @@ class MainStorage implements IStorage {
   // Payment methods
   async markCommitmentPaid(commitmentId: string, userId: number, month: string, amount: string): Promise<CommitmentPayment> {
     try {
-      const { data, error } = await supabase
-        .from('commitment_payments')
-        .upsert({
-          commitment_id: commitmentId,
-          paid_by: userId,
-          month,
-          amount_paid: amount
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      const existingPayment = await prisma.commitmentPayment.findFirst({
+        where: {
+          commitmentId: commitmentId,
+          month: month
+        }
+      });
+
+      if (existingPayment) {
+        const payment = await prisma.commitmentPayment.update({
+          where: { id: existingPayment.id },
+          data: {
+            paidBy: String(userId),
+            amountPaid: amount
+          }
+        });
+        return payment;
+      } else {
+        const payment = await prisma.commitmentPayment.create({
+          data: {
+            commitmentId: commitmentId,
+            paidBy: String(userId),
+            month: month,
+            amountPaid: amount
+          }
+        });
+        return payment;
+      }
     } catch (error) {
       console.error('Error marking commitment as paid:', error);
       throw error;
@@ -287,12 +309,12 @@ class MainStorage implements IStorage {
 
   async markCommitmentUnpaid(commitmentId: string, month: string): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('commitment_payments')
-        .delete()
-        .eq('commitment_id', commitmentId)
-        .eq('month', month);
-      if (error) throw error;
+      await prisma.commitmentPayment.deleteMany({
+        where: {
+          commitmentId: commitmentId,
+          month: month
+        }
+      });
     } catch (error) {
       console.error('Error marking commitment as unpaid:', error);
       throw error;
@@ -301,13 +323,13 @@ class MainStorage implements IStorage {
 
   async getCommitmentPayments(userId: number, month: string): Promise<CommitmentPayment[]> {
     try {
-      const { data, error } = await supabase
-        .from('commitment_payments')
-        .select('*')
-        .eq('paid_by', userId)
-        .eq('month', month);
-      if (error) throw error;
-      return data || [];
+      const payments = await prisma.commitmentPayment.findMany({
+        where: {
+          paidBy: String(userId),
+          month: month
+        }
+      });
+      return payments || [];
     } catch (error) {
       console.error('Error fetching commitment payments:', error);
       return [];
@@ -316,13 +338,13 @@ class MainStorage implements IStorage {
 
   async isCommitmentPaidForMonth(commitmentId: string, month: string): Promise<boolean> {
     try {
-      const { data, error } = await supabase
-        .from('commitment_payments')
-        .select('id')
-        .eq('commitment_id', commitmentId)
-        .eq('month', month)
-        .single();
-      return !!data && !error;
+      const payment = await prisma.commitmentPayment.findFirst({
+        where: {
+          commitmentId: commitmentId,
+          month: month
+        }
+      });
+      return !!payment;
     } catch (error) {
       return false;
     }
