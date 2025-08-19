@@ -1,17 +1,16 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import { AuthProvider } from "./auth/AuthProvider";
-import { useSession } from "./hooks/useSession";
-import LoginPage from "./auth/LoginPage";
-import RegisterPage from "./auth/RegisterPage";
-import DashboardPage from "./pages/Dashboard";
-import ProtectedRoute from "./components/ProtectedRoute";
-import Header from "./components/Header";
+import { Toaster } from '@/components/ui/toaster';
+import { Toaster as Sonner } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Index from './pages/Index';
+import NotFound from './pages/NotFound';
+import { AuthProvider } from './auth/AuthProvider';
+import { useSession } from './hooks/useSession';
+import LoginPage from './auth/LoginPage';
+import RegisterPage from './auth/RegisterPage';
+import DashboardPage from './pages/Dashboard';
+import ProtectedRoute from './components/ProtectedRoute';
 
 const queryClient = new QueryClient();
 
@@ -20,7 +19,6 @@ const AppRoutes = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
       <main className="flex-grow">
         <Routes>
           {/* Public routes */}
@@ -33,10 +31,7 @@ const AppRoutes = () => {
           </Route>
 
           {/* Default route */}
-          <Route
-            path="/"
-            element={session ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />}
-          />
+          <Route path="/" element={session ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
 
           {/* Original routes */}
           <Route path="/index" element={<Index />} />

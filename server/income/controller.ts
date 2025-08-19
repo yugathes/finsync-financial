@@ -1,11 +1,11 @@
-import { storage } from '../storage';
+import IncomeService from './services';
 import { Request, Response } from 'express';
 
 export async function getMonthlyIncome(req: Request, res: Response) {
   try {
     const userId = req.params.userId;
     const month = req.params.month;
-    const income = await storage.getMonthlyIncome(userId, month);
+    const income = await IncomeService.getMonthlyIncome(userId, month);
     if (!income) {
       return res.status(404).json({ error: 'Monthly income not found' });
     }
@@ -21,7 +21,7 @@ export async function setMonthlyIncome(req: Request, res: Response) {
     if (!userId || !month || !amount) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
-    const income = await storage.setMonthlyIncome(userId, { month, amount });
+    const income = await IncomeService.updateMonthlyIncome(userId, month, amount);
     res.json(income);
   } catch (error) {
     res.status(400).json({ error: 'Failed to set monthly income' });
@@ -36,7 +36,7 @@ export async function updateMonthlyIncome(req: Request, res: Response) {
     if (!amount) {
       return res.status(400).json({ error: 'Missing required field: amount' });
     }
-    const income = await storage.updateMonthlyIncome(userId, month, amount);
+    const income = await IncomeService.updateMonthlyIncome(userId, month, amount);
     res.json(income);
   } catch (error) {
     res.status(400).json({ error: 'Failed to update monthly income' });
