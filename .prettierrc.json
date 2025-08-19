@@ -1,0 +1,23 @@
+{
+  "singleQuote": true,
+  "useTabs": false,
+  "semi": true,
+  "trailingComma": "es5",
+  "jsxBracketSameLine": false,
+  "printWidth": 120,
+  "tabWidth": 2,
+  "bracketSpacing": true,
+  "proseWrap": "preserve",
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true,
+  "arrowParens": "avoid",
+  "importOrder": [
+    "^react$",
+    "<THIRD_PARTY_MODULES>",
+    "^(adapters|components|constants|featureFlags|images|i18n|services|styles|types|translations|utils)(.*)$",
+    "^(features)(.*)$",
+    "__mocks__",
+    "^[./]"
+  ],
+  "endOfLine": "lf"
+}
