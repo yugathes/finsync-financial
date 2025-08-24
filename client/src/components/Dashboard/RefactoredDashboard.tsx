@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import { useSession } from '../../hooks/useSession';
-import { Layout } from "@/components/Layout";
-import { BalanceCard } from "./BalanceCard";
-import { CommitmentsList } from "./CommitmentsList";
-import { CommitmentForm } from "../Commitments/CommitmentForm";
-import { IncomeModal } from "./IncomeModal";
-import { FloatingActionButton } from "../ui/FloatingActionButton";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { PlusCircle, TrendingUp, Calendar } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Layout } from '@/components/Layout';
+import { BalanceCard } from './BalanceCard';
+import { CommitmentsList } from './CommitmentsList';
+import { CommitmentForm } from '../Commitments/CommitmentForm';
+import { IncomeModal } from './IncomeModal';
+import { FloatingActionButton } from '../ui/FloatingActionButton';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { PlusCircle, TrendingUp, Calendar } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 // API helper functions
 const apiRequest = async (url: string, options: any = {}) => {
@@ -26,7 +26,6 @@ const apiRequest = async (url: string, options: any = {}) => {
   }
   return response.json();
 };
-
 
 export const RefactoredDashboard = () => {
   const { user } = useSession();
@@ -76,9 +75,9 @@ export const RefactoredDashboard = () => {
     } catch (error: any) {
       console.error('Error loading dashboard data:', error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to load dashboard data",
-        variant: "destructive"
+        title: 'Error',
+        description: error.message || 'Failed to load dashboard data',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -86,7 +85,7 @@ export const RefactoredDashboard = () => {
   };
 
   // Load data when user or month changes
-  React.useEffect(() => {
+  useEffect(() => {
     loadDashboardData();
     // eslint-disable-next-line
   }, [user?.id, currentMonth]);
@@ -100,20 +99,20 @@ export const RefactoredDashboard = () => {
         body: JSON.stringify({
           userId: user.id,
           month: currentMonth,
-          amount: income.toString()
-        })
+          amount: income.toString(),
+        }),
       });
       setMonthlyIncome(income);
       setShowIncomeModal(false);
       toast({
-        title: "Income updated!",
+        title: 'Income updated!',
         description: `Monthly income set to MYR ${income.toLocaleString()}`,
       });
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: 'Error',
         description: error.message || 'Failed to update income',
-        variant: "destructive"
+        variant: 'destructive',
       });
     }
   };
@@ -133,20 +132,20 @@ export const RefactoredDashboard = () => {
           userId: user.id,
           ...newCommitment,
           amount: newCommitment.amount.toString(),
-          startDate: new Date().toISOString().split('T')[0]
-        })
+          startDate: new Date().toISOString().split('T')[0],
+        }),
       });
       await loadDashboardData();
       setShowCommitmentForm(false);
       toast({
-        title: "Commitment added!",
+        title: 'Commitment added!',
         description: `${newCommitment.title} has been added to your list`,
       });
     } catch (error: any) {
       toast({
-        title: "Error",
+        title: 'Error',
         description: error.message || 'Failed to create commitment',
-        variant: "destructive"
+        variant: 'destructive',
       });
     }
   };
@@ -159,19 +158,19 @@ export const RefactoredDashboard = () => {
         body: JSON.stringify({
           userId: user.id,
           month: currentMonth,
-          amount: amount.toString()
-        })
+          amount: amount.toString(),
+        }),
       });
       await loadDashboardData();
       toast({
-        title: "Payment recorded!",
+        title: 'Payment recorded!',
         description: `Commitment marked as paid`,
       });
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to mark commitment as paid",
-        variant: "destructive"
+        title: 'Error',
+        description: error.message || 'Failed to mark commitment as paid',
+        variant: 'destructive',
       });
     }
   };
@@ -179,18 +178,18 @@ export const RefactoredDashboard = () => {
   const handleMarkUnpaid = async (commitmentId: string) => {
     try {
       await apiRequest(`/api/commitments/${commitmentId}/pay/${currentMonth}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       });
       await loadDashboardData();
       toast({
-        title: "Payment removed!",
-        description: "Commitment marked as unpaid",
+        title: 'Payment removed!',
+        description: 'Commitment marked as unpaid',
       });
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to mark commitment as unpaid",
-        variant: "destructive"
+        title: 'Error',
+        description: error.message || 'Failed to mark commitment as unpaid',
+        variant: 'destructive',
       });
     }
   };
@@ -199,18 +198,18 @@ export const RefactoredDashboard = () => {
     if (!window.confirm('Are you sure you want to delete this commitment?')) return;
     try {
       await apiRequest(`/api/commitments/${commitmentId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       });
       await loadDashboardData();
       toast({
-        title: "Commitment deleted!",
-        description: "Commitment has been removed",
+        title: 'Commitment deleted!',
+        description: 'Commitment has been removed',
       });
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to delete commitment",
-        variant: "destructive"
+        title: 'Error',
+        description: error.message || 'Failed to delete commitment',
+        variant: 'destructive',
       });
     }
   };
@@ -248,12 +247,7 @@ export const RefactoredDashboard = () => {
         <Card className="bg-white shadow-lg border-0">
           <CardContent className="pb-3">
             <div className="flex items-center justify-between">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => changeMonth('prev')}
-                className="text-blue-600"
-              >
+              <Button variant="ghost" size="sm" onClick={() => changeMonth('prev')} className="text-blue-600">
                 {/* You can use an icon here */}
                 &lt;
               </Button>
@@ -266,12 +260,7 @@ export const RefactoredDashboard = () => {
                   <span className="text-xs bg-blue-100 text-blue-700 rounded px-2 py-1 ml-2">Current Month</span>
                 )}
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => changeMonth('next')}
-                className="text-blue-600"
-              >
+              <Button variant="ghost" size="sm" onClick={() => changeMonth('next')} className="text-blue-600">
                 {/* You can use an icon here */}
                 &gt;
               </Button>
@@ -280,7 +269,7 @@ export const RefactoredDashboard = () => {
         </Card>
 
         {/* Balance Overview */}
-        <BalanceCard 
+        <BalanceCard
           income={monthlyIncome}
           commitments={totalCommitments}
           currency="MYR"
@@ -294,9 +283,7 @@ export const RefactoredDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Paid This Month</p>
-                  <p className="text-xl sm:text-2xl font-bold text-income">
-                    MYR {paidCommitments.toLocaleString()}
-                  </p>
+                  <p className="text-xl sm:text-2xl font-bold text-income">MYR {paidCommitments.toLocaleString()}</p>
                 </div>
                 <div className="p-2 sm:p-3 bg-accent/10 rounded-full">
                   <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-accent" />
@@ -310,9 +297,7 @@ export const RefactoredDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Commitments</p>
-                  <p className="text-xl sm:text-2xl font-bold">
-                    {commitments.length}
-                  </p>
+                  <p className="text-xl sm:text-2xl font-bold">{commitments.length}</p>
                 </div>
                 <div className="p-2 sm:p-3 bg-primary/10 rounded-full">
                   <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
@@ -326,18 +311,16 @@ export const RefactoredDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Quick Actions</p>
-                  <Button 
-                    variant="primary" 
-                    size="sm" 
+                  <Button
+                    variant="primary"
+                    size="sm"
                     className="mt-2 hidden sm:flex"
                     onClick={() => setShowCommitmentForm(true)}
                   >
                     <PlusCircle className="h-4 w-4 mr-1" />
                     Add Commitment
                   </Button>
-                  <div className="mt-2 text-xs text-muted-foreground sm:hidden">
-                    Use the + button to add
-                  </div>
+                  <div className="mt-2 text-xs text-muted-foreground sm:hidden">Use the + button to add</div>
                 </div>
               </div>
             </CardContent>
@@ -345,7 +328,7 @@ export const RefactoredDashboard = () => {
         </div>
 
         {/* Commitments List */}
-        <CommitmentsList 
+        <CommitmentsList
           commitments={commitments}
           currency="MYR"
           onMarkPaid={handleMarkPaid}
@@ -361,7 +344,7 @@ export const RefactoredDashboard = () => {
           onSubmit={handleAddCommitment}
           onCancel={() => setShowCommitmentForm(false)}
         />
-        
+
         <IncomeModal
           isVisible={showIncomeModal}
           currentIncome={monthlyIncome}

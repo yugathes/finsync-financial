@@ -1,11 +1,10 @@
-import { start } from 'repl';
-import { storage } from '../storage';
+import CommitmentService from './services';
 import { Request, Response } from 'express';
 
 export async function getCommitmentsByUser(req: Request, res: Response) {
   try {
     const userId = parseInt(req.params.userId);
-    const commitments = await storage.getCommitmentsByUser(userId);
+    const commitments = await CommitmentService.getCommitmentsByUser(userId);
     res.json(commitments);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch commitments' });
@@ -17,7 +16,7 @@ export async function getCommitmentsForMonth(req: Request, res: Response) {
     const userId = req.params.userId;
     const month = req.params.month;
     console.log('Fetching commitments for user:', userId, 'month:', month);
-    const commitments = await storage.getCommitmentsForMonth(userId, month);
+    const commitments = await CommitmentService.getCommitmentsForMonth(userId, month);
     res.json(commitments);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch commitments for month' });
@@ -30,7 +29,7 @@ export async function createCommitment(req: Request, res: Response) {
     if (!userId || !type || !title || !category || !amount || !startDate) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
-    const commitment = await storage.createCommitment({
+    const commitment = await CommitmentService.createCommitment({
       userId,
       type,
       title,
@@ -39,7 +38,7 @@ export async function createCommitment(req: Request, res: Response) {
       recurring: recurring ?? true,
       shared: shared ?? false,
       groupId,
-      start_date: startDate
+      startDate: new Date(startDate),
     });
     res.json(commitment);
   } catch (error) {
@@ -51,7 +50,7 @@ export async function updateCommitment(req: Request, res: Response) {
   try {
     const id = req.params.id;
     const updates = req.body;
-    const commitment = await storage.updateCommitment(id, updates);
+    const commitment = await CommitmentService.updateCommitment(id, updates);
     res.json(commitment);
   } catch (error) {
     res.status(400).json({ error: 'Failed to update commitment' });
@@ -61,7 +60,7 @@ export async function updateCommitment(req: Request, res: Response) {
 export async function deleteCommitment(req: Request, res: Response) {
   try {
     const id = req.params.id;
-    await storage.deleteCommitment(id);
+    await CommitmentService.deleteCommitment(id);
     res.json({ success: true, message: 'Commitment deleted successfully' });
   } catch (error) {
     res.status(400).json({ error: 'Failed to delete commitment' });
