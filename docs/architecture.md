@@ -1,40 +1,55 @@
-# Project Architecture: Backend & Frontend Integration
+# Project Architecture: Monorepo Backend & Frontend Integration
+
+> **Note**: This project has been refactored to a monorepo structure with separated frontend and backend services. See [monorepo-architecture.md](./monorepo-architecture.md) for the new architecture.
 
 ## Entry Points
 
-- **Backend entry point:** `server/index.ts`
-  - This file starts the Express server and registers all API routes.
-- **Frontend entry point:** `client/index.html` (served by Vite during development)
+- **Backend entry point:** `backend/index.ts`
+  - Pure Express.js API server running on port 3000
+  - No longer integrates with Vite for development or production
+- **Frontend entry point:** `frontend/index.html` (served by Vite during development)
+  - Dedicated React application served by Vite dev server on port 5173
+  - Built and served by Nginx in production
 
 ## How the Backend and Frontend Run Together
 
 ### Development
 - **Frontend:**
-  - Run with `npm run client` (which runs `vite`).
-  - Vite serves the React app from `client/` on its own dev server (default: port 5173).
+  - Run with `npm run dev:frontend` (which runs `vite`)
+  - Vite serves the React app from `frontend/` on port 5173
+  - Proxies API requests to backend on port 3000
 - **Backend:**
-  - Run with `npm run dev` (which runs `tsx watch ... server/index.ts`).
-  - Express API is served from `server/index.ts` (default: port 3000 or as configured).
-  - The backend watches only the `server/` directory for changes and restarts automatically.
+  - Run with `npm run dev:backend` (which runs `tsx index.ts`)
+  - Express API is served from `backend/index.ts` on port 3000
+  - Independent from frontend, no Vite integration
 
-**During development, frontend and backend run as separate processes.**
-- The frontend makes API requests to the backend (e.g., `/api/...` endpoints) using the backend's port.
-- You may need to configure CORS in Express for local development.
+**During development, frontend and backend run as completely separate processes.**
+- The frontend makes API requests to the backend via proxy configuration
+- CORS is properly configured in Express for cross-origin requests
 
 ### Production
-- Run `npm run build` to build both frontend and backend.
-- The backend (Express) serves the static frontend files (from Vite's build output, usually `dist/`).
-- The same Express server handles both API requests and static file serving, so everything runs on a single port.
+- **Frontend**: Built static files served by Nginx on port 80
+- **Backend**: Express API server running on port 3000
+- **Nginx**: Reverse proxy routes `/api/*` to backend, serves static files for all other routes
 
 ## How They Connect
-- **Frontend** (React, Vite) makes HTTP requests (usually via `fetch` or `axios`) to the backend API endpoints (e.g., `/api/users`, `/api/dashboard`, etc.).
-- **Backend** (Express) handles these API requests and also serves the built frontend files in production.
+- **Frontend** (React, Vite) makes HTTP requests to backend API endpoints (e.g., `/api/users`, `/api/dashboard`, etc.)
+- **Backend** (Express) serves only API endpoints, no static file serving
+- **Production**: Nginx handles routing between frontend and backend services
+
+## Database Architecture
+- **PostgreSQL**: Containerized database with proper initialization
+- **Prisma ORM**: Type-safe database operations
+- **Migrations**: Versioned database schema changes
+- **Test Database**: Separate database for testing isolation
 
 ## Summary
-- **Development:** Two servers (Vite for frontend, Express for backend), connected via HTTP API calls.
-- **Production:** One server (Express) serves both API and static frontend files.
-- **Entry points:** `server/index.ts` (backend), `client/index.html` (frontend).
+- **Development:** Two independent servers with proxy for API calls
+- **Production:** Nginx serves frontend and proxies API to backend
+- **Database:** Containerized PostgreSQL with Prisma ORM
+- **Entry points:** `backend/index.ts` (API), `frontend/index.html` (UI)
+- **Documentation:** API docs available at `/api/docs`
 
 ---
 
-For more details, see the scripts in `package.json` and the structure of the `server/` and `client/` folders.
+For detailed setup and deployment instructions, see [monorepo-architecture.md](./monorepo-architecture.md).
