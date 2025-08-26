@@ -4,10 +4,10 @@
 
 ## Entry Points
 
-- **Backend entry point:** `backend/index.ts`
+- **Backend entry point:** `server/index.ts`
   - Pure Express.js API server running on port 3000
   - No longer integrates with Vite for development or production
-- **Frontend entry point:** `frontend/index.html` (served by Vite during development)
+- **Frontend entry point:** `client/index.html` (served by Vite during development)
   - Dedicated React application served by Vite dev server on port 5173
   - Built and served by Nginx in production
 
@@ -16,11 +16,11 @@
 ### Development
 - **Frontend:**
   - Run with `npm run dev:frontend` (which runs `vite`)
-  - Vite serves the React app from `frontend/` on port 5173
+  - Vite serves the React app from `client/` on port 5173
   - Proxies API requests to backend on port 3000
 - **Backend:**
   - Run with `npm run dev:backend` (which runs `tsx index.ts`)
-  - Express API is served from `backend/index.ts` on port 3000
+  - Express API is served from `server/index.ts` on port 3000
   - Independent from frontend, no Vite integration
 
 **During development, frontend and backend run as completely separate processes.**
@@ -47,7 +47,7 @@
 - **Development:** Two independent servers with proxy for API calls
 - **Production:** Nginx serves frontend and proxies API to backend
 - **Database:** Containerized PostgreSQL with Prisma ORM
-- **Entry points:** `backend/index.ts` (API), `frontend/index.html` (UI)
+- **Entry points:** `server/index.ts` (API), `client/index.html` (UI)
 - **Documentation:** API docs available at `/api/docs`
 
 ---

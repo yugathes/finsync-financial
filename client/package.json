@@ -1,5 +1,5 @@
 {
-  "name": "finsync-frontend",
+  "name": "finsync-client",
   "version": "1.0.0",
   "type": "module",
   "scripts": {

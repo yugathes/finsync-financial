@@ -4,29 +4,29 @@
 
 ```
 finsync-financial/
-├── frontend/                 # React + Vite frontend
-│   ├── src/                 # Frontend source code
-│   ├── public/              # Static assets
-│   ├── Dockerfile           # Production frontend container
-│   ├── Dockerfile.dev       # Development frontend container
-│   └── package.json         # Frontend dependencies
-├── backend/                 # Node.js + Express backend
-│   ├── commitment/          # Commitment management routes
-│   ├── dashboard/           # Dashboard routes
-│   ├── income/              # Income management routes
-│   ├── payment/             # Payment management routes
-│   ├── user/                # User management routes
-│   ├── utils/               # Shared utilities
-│   ├── __tests__/           # Backend tests
-│   ├── prisma/              # Database schema & migrations
-│   ├── lib/                 # Shared libraries
-│   ├── Dockerfile           # Production backend container
-│   └── package.json         # Backend dependencies
-├── docker/                  # Docker configurations
-│   ├── nginx.conf           # Nginx configuration for frontend
-│   └── postgres/            # PostgreSQL initialization
-├── docs/                    # Project documentation
-└── docker-compose.yml       # Multi-service orchestration
+├── client/                    # React + Vite frontend
+│   ├── src/                  # Frontend source code
+│   ├── public/               # Static assets
+│   ├── Dockerfile            # Production frontend container
+│   ├── Dockerfile.dev        # Development frontend container
+│   └── package.json          # Frontend dependencies
+├── server/                   # Node.js + Express backend
+│   ├── commitment/           # Commitment management routes
+│   ├── dashboard/            # Dashboard routes
+│   ├── income/               # Income management routes
+│   ├── payment/              # Payment management routes
+│   ├── user/                 # User management routes
+│   ├── utils/                # Shared utilities
+│   ├── __tests__/            # Backend tests
+│   ├── prisma/               # Database schema & migrations
+│   ├── lib/                  # Shared libraries
+│   ├── Dockerfile            # Production backend container
+│   └── package.json          # Backend dependencies
+├── docker/                   # Docker configurations
+│   ├── nginx.conf            # Nginx configuration for frontend
+│   └── postgres/             # PostgreSQL initialization
+├── docs/                     # Project documentation
+└── docker-compose.yml        # Multi-service orchestration
 ```
 
 ## Development Workflow
@@ -47,8 +47,8 @@ finsync-financial/
    ```bash
    # Copy environment files
    cp .env.example .env
-   cp backend/.env.example backend/.env
-   cp frontend/.env.example frontend/.env
+   cp server/.env.example server/.env
+   cp client/.env.example client/.env
    
    # Update database URLs and secrets
    ```

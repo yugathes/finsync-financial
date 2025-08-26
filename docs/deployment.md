@@ -19,7 +19,7 @@ DATABASE_PASSWORD=secure_password_here
 LOG_LEVEL=info
 ```
 
-### Backend Environment (`backend/.env`)
+### Backend Environment (`server/.env`)
 ```env
 PORT=3000
 DATABASE_URL=postgresql://postgres:secure_password_here@database:5432/finsync
@@ -28,7 +28,7 @@ LOG_LEVEL=info
 SESSION_SECRET=very_secure_session_secret_here
 ```
 
-### Frontend Environment (`frontend/.env`)
+### Frontend Environment (`client/.env`)
 ```env
 VITE_API_URL=https://your-domain.com
 ```
@@ -45,13 +45,13 @@ cd finsync-financial
 
 # Set up environment variables
 cp .env.example .env
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
+cp server/.env.example server/.env
+cp client/.env.example client/.env
 
 # Edit environment files with your production values
 nano .env
-nano backend/.env
-nano frontend/.env
+nano server/.env
+nano client/.env
 
 # Start all services
 docker-compose up -d
@@ -77,7 +77,7 @@ docker-compose --profile dev up frontend-dev backend
 
 #### Backend Deployment
 ```bash
-cd backend
+cd server
 
 # Install dependencies
 npm ci --only=production
@@ -97,7 +97,7 @@ npm start
 
 #### Frontend Deployment
 ```bash
-cd frontend
+cd client
 
 # Install dependencies
 npm ci --only=production
@@ -195,7 +195,7 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
 
     # Frontend
-    root /var/www/finsync/frontend/dist;
+    root /var/www/finsync/client/dist;
     index index.html;
 
     location / {

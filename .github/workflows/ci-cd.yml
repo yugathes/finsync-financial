@@ -28,7 +28,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: ./backend
+        working-directory: ./server
 
     steps:
     - uses: actions/checkout@v4
@@ -38,7 +38,7 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
-        cache-dependency-path: backend/package-lock.json
+        cache-dependency-path: server/package-lock.json
     
     - name: Install dependencies
       run: npm ci
@@ -61,7 +61,7 @@ jobs:
     
     defaults:
       run:
-        working-directory: ./frontend
+        working-directory: ./client
 
     steps:
     - uses: actions/checkout@v4
@@ -71,7 +71,7 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
-        cache-dependency-path: frontend/package-lock.json
+        cache-dependency-path: client/package-lock.json
     
     - name: Install dependencies
       run: npm ci
@@ -97,16 +97,16 @@ jobs:
     - name: Build backend Docker image
       uses: docker/build-push-action@v5
       with:
-        context: ./backend
-        file: ./backend/Dockerfile
+        context: ./server
+        file: ./server/Dockerfile
         push: false
         tags: finsync-backend:test
     
     - name: Build frontend Docker image
       uses: docker/build-push-action@v5
       with:
-        context: ./frontend
-        file: ./frontend/Dockerfile
+        context: ./client
+        file: ./client/Dockerfile
         push: false
         tags: finsync-frontend:test
 
