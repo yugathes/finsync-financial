@@ -11,6 +11,8 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' && componentTagger(),
     // Cartographer plugin disabled for compatibility
   ].filter(Boolean),
+  // Ensure Vite loads .env.* files from the repository root
+  envDir: import.meta.dirname,
   server: {
     host: '::',
     port: 8080,

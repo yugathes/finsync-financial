@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '@db/client';
+import { supabase } from '@/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -44,25 +44,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     let mounted = true;
-    
+
     const getSession = async () => {
       try {
         console.log('Getting initial session...');
-        
+
         // Add timeout to prevent hanging
         const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session timeout')), 5000)
-        );
-        
-        const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]) as any;
-        
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Session timeout')), 5000));
+
+        const {
+          data: { session },
+          error,
+        } = (await Promise.race([sessionPromise, timeoutPromise])) as any;
+
         if (error) {
           console.error('Session fetch error:', error);
         } else {
           console.log('Initial session:', session ? 'Found' : 'None');
         }
-        
+
         if (mounted) {
           setSession(session);
           setUser(session?.user ?? null);
@@ -83,19 +84,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     getSession();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event: string, session: Session | null) => {
-        console.log('Auth state change:', event, session ? 'Session exists' : 'No session');
-        if (mounted) {
-          setSession(session);
-          setUser(session?.user ?? null);
-          setLoading(false);
-        }
-        if (session?.user) {
-          syncUser(session.user);
-        }
+    const { data: authListener } = supabase.auth.onAuthStateChange((event: string, session: Session | null) => {
+      console.log('Auth state change:', event, session ? 'Session exists' : 'No session');
+      if (mounted) {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
       }
-    );
+      if (session?.user) {
+        syncUser(session.user);
+      }
+    });
 
     return () => {
       mounted = false;

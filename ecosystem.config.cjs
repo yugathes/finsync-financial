@@ -1,5 +1,3 @@
-// Note: This project uses ESM (package.json type: module). PM2 config should be CommonJS (.cjs).
-// Use ecosystem.config.cjs instead of this file.
 module.exports = {
   apps: [
     {
@@ -17,7 +15,6 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: 5000,
       },
-      // Advanced PM2 options
       max_memory_restart: '1G',
       error_file: './logs/err.log',
       out_file: './logs/out.log',
@@ -26,25 +23,19 @@ module.exports = {
       autorestart: true,
       max_restarts: 10,
       min_uptime: '10s',
-      // Graceful reload
       kill_timeout: 5000,
       listen_timeout: 8000,
-      // Health check
       health_check_http: {
         url: 'http://localhost:5000/api/health',
         interval: 30000,
         timeout: 5000,
       },
-      // Process management
-      watch: false, // Don't watch in production
+      watch: false,
       ignore_watch: ['node_modules', 'logs'],
-      // Environment specific configs
       merge_logs: true,
       log_date_format: 'YYYY-MM-DD HH:mm Z',
     },
   ],
-
-  // Deployment configuration
   deploy: {
     production: {
       user: 'deploy',
@@ -54,7 +45,7 @@ module.exports = {
       path: '/var/www/finsync-financial',
       'pre-deploy-local': '',
       'post-deploy':
-        'yarn install && yarn build:production && yarn prisma:deploy && pm2 reload ecosystem.config.js --env production',
+        'yarn install && yarn build:production && yarn prisma:deploy && pm2 reload ecosystem.config.cjs --env production',
       'pre-setup': '',
     },
     staging: {
@@ -64,7 +55,7 @@ module.exports = {
       repo: 'git@github.com:your-username/finsync-financial.git',
       path: '/var/www/finsync-financial-staging',
       'post-deploy':
-        'yarn install && yarn build:staging && yarn prisma:deploy && pm2 reload ecosystem.config.js --env staging',
+        'yarn install && yarn build:staging && yarn prisma:deploy && pm2 reload ecosystem.config.cjs --env staging',
     },
   },
 };
