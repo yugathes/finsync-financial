@@ -65,16 +65,50 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(__dirname, '../dist/public');
+  const distPath = path.resolve(__dirname, '../dist/client');
 
+  // Check if the build directory exists
   if (!fs.existsSync(distPath)) {
+    console.error(`Build directory not found: ${distPath}`);
     throw new Error(`Could not find the build directory: ${distPath}, make sure to build the client first`);
   }
 
-  app.use(express.static(distPath));
+  // Serve static files with proper caching headers
+  app.use(
+    express.static(distPath, {
+      maxAge: process.env.NODE_ENV === 'production' ? '1y' : '0',
+      etag: true,
+      lastModified: true,
+      setHeaders: (res, path) => {
+        // Set proper MIME types and caching
+        if (path.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-cache');
+        } else if (path.match(/\.(js|css|woff|woff2|ttf|eot|svg|png|jpg|jpeg|gif|ico)$/)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year
+        }
+      },
+    })
+  );
 
-  // fall through to index.html if the file doesn't exist
-  app.use('*', (_req, res) => {
-    res.sendFile(path.resolve(distPath, 'index.html'));
+  // Health check for static assets
+  app.get('/health/static', (req, res) => {
+    const indexPath = path.resolve(distPath, 'index.html');
+    const exists = fs.existsSync(indexPath);
+    res.json({
+      status: exists ? 'OK' : 'ERROR',
+      static_files: exists,
+      build_path: distPath,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  // Fall through to index.html for SPA routing
+  app.use('*', (req, res) => {
+    const indexPath = path.resolve(distPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).send('Application not built. Please run build command first.');
+    }
   });
 }

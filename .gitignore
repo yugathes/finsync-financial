@@ -5,6 +5,16 @@ server/public
 vite.config.ts.*
 *.tar.gz
 .env
+.env.production
+.env.staging
+
+# PM2 logs and process files
+logs/
+.pm2
+pids
+*.pid
+*.seed
+*.log
 
 # Prisma
 node_modules/.prisma

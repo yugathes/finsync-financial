@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "NODE_ENV=development nodemon --watch server --ext ts,js --exec \"tsx server/index.ts\"",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "build:production": "NODE_ENV=production vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && yarn prisma:generate",
+    "build:staging": "NODE_ENV=staging vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && yarn prisma:generate",
     "start": "NODE_ENV=production node dist/index.js",
     "build:dev": "vite build --mode development",
     "check": "tsc",
@@ -13,7 +15,21 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "prisma:generate": "prisma generate",
+    "prisma:deploy": "prisma migrate deploy && prisma generate",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:start:production": "pm2 start ecosystem.config.js --env production",
+    "pm2:start:staging": "pm2 start ecosystem.config.js --env staging",
+    "pm2:stop": "pm2 stop finsync-financial",
+    "pm2:restart": "pm2 restart finsync-financial",
+    "pm2:reload": "pm2 reload finsync-financial",
+    "pm2:delete": "pm2 delete finsync-financial",
+    "pm2:logs": "pm2 logs finsync-financial",
+    "pm2:monit": "pm2 monit",
+    "deploy:production": "yarn build:production && yarn pm2:start:production",
+    "deploy:staging": "yarn build:staging && yarn pm2:start:staging",
+    "deploy:local": "yarn build && yarn pm2:start"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
