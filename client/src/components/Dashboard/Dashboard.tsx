@@ -62,6 +62,7 @@ export const Dashboard = () => {
       date.setMonth(date.getMonth() + 1);
     }
     const newMonth = date.toISOString().slice(0, 7);
+    console.log(`[Dashboard] Changing month from ${currentMonth} to ${newMonth}`);
     setCurrentMonth(newMonth);
   };
 
@@ -70,8 +71,17 @@ export const Dashboard = () => {
     if (!user?.id) return;
     try {
       setLoading(true);
+      
+      console.log(`[Dashboard] Loading dashboard data for user ${user.id} and month ${currentMonth}`);
+      
       // Load dashboard summary
       const summary = await apiRequest(`/api/dashboard/${user.id}/${currentMonth}`);
+      
+      console.log(`[Dashboard] Dashboard data loaded successfully for ${currentMonth}:`, {
+        income: summary.income,
+        commitmentsCount: summary.commitmentsList?.length || 0
+      });
+      
       setMonthlyIncome(summary.income || 0);
       setCommitments(summary.commitmentsList || []);
     } catch (error: any) {
