@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { CommitmentList, CommitmentWithStatus } from '../Commitments/CommitmentList';
 import { NewCommitmentForm, NewCommitmentData } from '../Commitments/NewCommitmentForm';
@@ -66,7 +66,7 @@ export const Dashboard = () => {
   };
 
   // Load dashboard data
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     if (!user?.id) return;
     try {
       setLoading(true);
@@ -84,14 +84,13 @@ export const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id, currentMonth, toast]);
 
   // Load data when user or month changes
   useEffect(() => {
     loadDashboardData();
     console.log('Dashboard data loaded for user:', user?.id, 'and month:', currentMonth);
-    // eslint-disable-next-line
-  }, [user?.id, currentMonth]);
+  }, [loadDashboardData, user?.id, currentMonth]);
 
   // Income management
   const handleUpdateIncome = async (amount: number) => {

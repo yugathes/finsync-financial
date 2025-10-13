@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from '../hooks/useSession';
 import { BalanceCard } from '../components/Dashboard/BalanceCard';
 import { CommitmentList, CommitmentWithStatus } from '../components/Commitments/CommitmentList';
@@ -70,7 +70,7 @@ export const NewDashboard: React.FC = () => {
   };
 
   // Load dashboard data
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     if (!user?.id) return;
     
     try {
@@ -92,12 +92,12 @@ export const NewDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id, currentMonth, toast]);
 
   // Load data when user or month changes
   useEffect(() => {
     loadDashboardData();
-  }, [user?.id, currentMonth]);
+  }, [loadDashboardData]);
 
   // Income management
   const handleUpdateIncome = async (amount: number) => {

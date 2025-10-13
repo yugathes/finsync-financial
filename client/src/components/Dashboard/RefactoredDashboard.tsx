@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { Layout } from '@/components/Layout';
 import { BalanceCard } from './BalanceCard';
@@ -64,7 +64,7 @@ export const RefactoredDashboard = () => {
   };
 
   // Load dashboard data
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     if (!user?.id) return;
     try {
       setLoading(true);
@@ -82,13 +82,12 @@ export const RefactoredDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id, currentMonth, toast]);
 
   // Load data when user or month changes
   useEffect(() => {
     loadDashboardData();
-    // eslint-disable-next-line
-  }, [user?.id, currentMonth]);
+  }, [loadDashboardData]);
 
   // Income management
   const handleUpdateIncome = async (income: number) => {
