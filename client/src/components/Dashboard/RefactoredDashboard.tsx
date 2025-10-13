@@ -8,7 +8,7 @@ import { IncomeModal } from './IncomeModal';
 import { FloatingActionButton } from '../ui/FloatingActionButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { PlusCircle, TrendingUp, Calendar } from 'lucide-react';
+import { PlusCircle, TrendingUp, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 // API helper functions
@@ -248,8 +248,7 @@ export const RefactoredDashboard = () => {
           <CardContent className="pb-3">
             <div className="flex items-center justify-between">
               <Button variant="ghost" size="sm" onClick={() => changeMonth('prev')} className="text-blue-600">
-                {/* You can use an icon here */}
-                &lt;
+                <ChevronLeft className="h-4 w-4" />
               </Button>
               <div className="text-center">
                 <h2 className="text-lg font-semibold text-blue-800 flex items-center gap-2">
@@ -261,8 +260,7 @@ export const RefactoredDashboard = () => {
                 )}
               </div>
               <Button variant="ghost" size="sm" onClick={() => changeMonth('next')} className="text-blue-600">
-                {/* You can use an icon here */}
-                &gt;
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </CardContent>
