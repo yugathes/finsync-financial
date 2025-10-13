@@ -169,8 +169,8 @@ export const FinancialDashboard: React.FC<FinancialDashboardProps> = ({ userId }
   };
 
   // Calculate totals
-  const totalCommitments = commitments.reduce((sum, c) => sum + c.amount, 0);
-  const paidCommitments = commitments.filter(c => c.isPaid).reduce((sum, c) => sum + (c.amountPaid || c.amount), 0);
+  const totalCommitments = commitments.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
+  const paidCommitments = commitments.filter(c => c.isPaid).reduce((sum, c) => sum + (Number(c.amountPaid || c.amount) || 0), 0);
   const remainingBalance = monthlyIncome - paidCommitments;
   const budgetUsedPercentage = monthlyIncome > 0 ? (paidCommitments / monthlyIncome) * 100 : 0;
 

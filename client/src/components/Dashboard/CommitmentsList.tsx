@@ -24,7 +24,7 @@ interface CommitmentsListProps {
 export const CommitmentsList = ({ commitments, currency = 'MYR', onMarkPaid, onAddNew }: CommitmentsListProps) => {
   const unpaidCommitments = commitments.filter(c => !c.isPaid);
   const paidCommitments = commitments.filter(c => c.isPaid);
-  const totalUnpaid = unpaidCommitments.reduce((sum, c) => sum + c.amount, 0);
+  const totalUnpaid = unpaidCommitments.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
 
   return (
     <Card className="bg-white shadow-lg border-0 animate-fade-in">
