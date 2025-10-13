@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { CommitmentList, CommitmentWithStatus } from '../Commitments/CommitmentList';
 import { NewCommitmentForm, NewCommitmentData } from '../Commitments/NewCommitmentForm';
@@ -62,16 +62,26 @@ export const Dashboard = () => {
       date.setMonth(date.getMonth() + 1);
     }
     const newMonth = date.toISOString().slice(0, 7);
+    console.log(`[Dashboard] Changing month from ${currentMonth} to ${newMonth}`);
     setCurrentMonth(newMonth);
   };
 
   // Load dashboard data
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     if (!user?.id) return;
     try {
       setLoading(true);
+      
+      console.log(`[Dashboard] Loading dashboard data for user ${user.id} and month ${currentMonth}`);
+      
       // Load dashboard summary
       const summary = await apiRequest(`/api/dashboard/${user.id}/${currentMonth}`);
+      
+      console.log(`[Dashboard] Dashboard data loaded successfully for ${currentMonth}:`, {
+        income: summary.income,
+        commitmentsCount: summary.commitmentsList?.length || 0
+      });
+      
       setMonthlyIncome(summary.income || 0);
       setCommitments(summary.commitmentsList || []);
     } catch (error: any) {
@@ -84,14 +94,13 @@ export const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id, currentMonth, toast]);
 
   // Load data when user or month changes
   useEffect(() => {
     loadDashboardData();
     console.log('Dashboard data loaded for user:', user?.id, 'and month:', currentMonth);
-    // eslint-disable-next-line
-  }, [user?.id, currentMonth]);
+  }, [loadDashboardData, user?.id, currentMonth]);
 
   // Income management
   const handleUpdateIncome = async (amount: number) => {
