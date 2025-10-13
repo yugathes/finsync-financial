@@ -53,7 +53,7 @@ export const RefactoredDashboard = () => {
 
   const changeMonth = (direction: 'prev' | 'next') => {
     const [year, month] = currentMonth.split('-').map(Number);
-    const date = new Date(year, month - 1);
+    const date = new Date(year, month);
     if (direction === 'prev') {
       date.setMonth(date.getMonth() - 1);
     } else {
