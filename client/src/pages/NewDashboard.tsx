@@ -229,10 +229,10 @@ export const NewDashboard: React.FC = () => {
   };
 
   // Calculate metrics
-  const totalCommitments = commitments.reduce((sum, c) => sum + parseFloat(c.amount), 0);
+  const totalCommitments = commitments.reduce((sum, c) => sum + (parseFloat(c.amount) || 0), 0);
   const paidCommitments = commitments
     .filter(c => c.isPaid)
-    .reduce((sum, c) => sum + parseFloat(c.amountPaid || c.amount), 0);
+    .reduce((sum, c) => sum + (parseFloat(c.amountPaid || c.amount) || 0), 0);
   const availableBalance = monthlyIncome - paidCommitments;
 
   if (loading) {

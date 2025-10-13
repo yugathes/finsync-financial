@@ -151,7 +151,7 @@ export const CommitmentList: React.FC<CommitmentListProps> = ({
           <div className="flex items-center gap-2 text-sm">
             <Clock className="h-4 w-4 text-blue-500" />
             <span className="text-blue-600">
-              {unpaidCommitments.length} remaining • {currency} {unpaidCommitments.reduce((sum, c) => sum + parseFloat(c.amount), 0).toLocaleString()} to pay
+              {unpaidCommitments.length} remaining • {currency} {unpaidCommitments.reduce((sum, c) => sum + (parseFloat(c.amount) || 0), 0).toLocaleString()} to pay
             </span>
           </div>
         )}
