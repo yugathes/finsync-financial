@@ -47,3 +47,29 @@ export async function syncUser(req: Request, res: Response) {
     res.status(500).json({ error: 'Failed to sync user', details: error });
   }
 }
+
+export async function searchUserByEmail(req: Request, res: Response) {
+  try {
+    const { email } = req.query;
+    if (!email) {
+      return res.status(400).json({ error: 'Missing email parameter' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: email as string },
+      select: {
+        id: true,
+        email: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Error searching user:', error);
+    res.status(500).json({ error: 'Failed to search user', details: error });
+  }
+}

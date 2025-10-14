@@ -3,13 +3,16 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { CommitmentList, CommitmentWithStatus } from '../Commitments/CommitmentList';
 import { NewCommitmentForm, NewCommitmentData } from '../Commitments/NewCommitmentForm';
+import { ImportWizardModal } from '../Commitments/ImportWizardModal';
 import { MonthlyIncomeForm } from '../Income/MonthlyIncomeForm';
 import { FloatingActionButton } from '../ui/FloatingActionButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, ChevronLeft, ChevronRight, TrendingUp, DollarSign, Target } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Calendar, ChevronLeft, ChevronRight, TrendingUp, DollarSign, Target, Upload, Users, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 // API helper functions
@@ -42,7 +45,12 @@ export const Dashboard = () => {
   const [commitments, setCommitments] = useState<CommitmentWithStatus[]>([]);
   const [showIncomeForm, setShowIncomeForm] = useState(false);
   const [showCommitmentForm, setShowCommitmentForm] = useState(false);
+  const [showImportWizard, setShowImportWizard] = useState(false);
   const [loading, setLoading] = useState(true);
+  
+  // Filter state
+  const [includeShared, setIncludeShared] = useState(false);
+  const [includeImported, setIncludeImported] = useState(false);
 
   // Helper functions
   const formatMonth = (monthStr: string) => {
@@ -74,16 +82,27 @@ export const Dashboard = () => {
       
       console.log(`[Dashboard] Loading dashboard data for user ${user.id} and month ${currentMonth}`);
       
-      // Load dashboard summary
-      const summary = await apiRequest(`/api/dashboard/${user.id}/${currentMonth}`);
-      
-      console.log(`[Dashboard] Dashboard data loaded successfully for ${currentMonth}:`, {
-        income: summary.income,
-        commitmentsCount: summary.commitmentsList?.length || 0
+      // Build query parameters for filters
+      const params = new URLSearchParams({
+        includeShared: includeShared.toString(),
+        includeImported: includeImported.toString(),
       });
       
-      setMonthlyIncome(summary.income || 0);
-      setCommitments(summary.commitmentsList || []);
+      // Load commitments with filters
+      const commitmentsData = await apiRequest(
+        `/api/commitments/user/${user.id}/month/${currentMonth}?${params}`
+      );
+      
+      // Load income
+      const incomeData = await apiRequest(`/api/monthly-income/${user.id}/${currentMonth}`);
+      
+      console.log(`[Dashboard] Dashboard data loaded successfully for ${currentMonth}:`, {
+        income: incomeData?.amount || 0,
+        commitmentsCount: commitmentsData?.length || 0
+      });
+      
+      setMonthlyIncome(incomeData?.amount ? parseFloat(incomeData.amount) : 0);
+      setCommitments(commitmentsData || []);
     } catch (error: any) {
       console.error('Error loading dashboard data:', error);
       toast({
@@ -94,7 +113,7 @@ export const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, currentMonth, toast]);
+  }, [user?.id, currentMonth, includeShared, includeImported, toast]);
 
   // Load data when user or month changes
   useEffect(() => {
@@ -218,6 +237,26 @@ export const Dashboard = () => {
         description: error.message || "Failed to delete commitment",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleImportCommitments = async (importedCommitments: any[]) => {
+    if (!user?.id) return;
+    try {
+      await apiRequest('/api/commitments/import', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: user.id,
+          commitments: importedCommitments,
+        }),
+      });
+      await loadDashboardData();
+      toast({
+        title: "Import Successful",
+        description: `${importedCommitments.length} commitment(s) imported`,
+      });
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to import commitments');
     }
   };
 
@@ -364,6 +403,49 @@ export const Dashboard = () => {
         </div>
       )}
 
+      {/* Filters and Actions */}
+      <Card className="bg-white shadow-lg border-0">
+        <CardHeader>
+          <CardTitle className="text-lg">View Options</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="shared-filter"
+                  checked={includeShared}
+                  onCheckedChange={setIncludeShared}
+                />
+                <Label htmlFor="shared-filter" className="flex items-center gap-2 cursor-pointer">
+                  <Users className="h-4 w-4 text-blue-600" />
+                  Show Shared Commitments
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="imported-filter"
+                  checked={includeImported}
+                  onCheckedChange={setIncludeImported}
+                />
+                <Label htmlFor="imported-filter" className="flex items-center gap-2 cursor-pointer">
+                  <FileText className="h-4 w-4 text-purple-600" />
+                  Show Imported Records
+                </Label>
+              </div>
+            </div>
+            <Button
+              onClick={() => setShowImportWizard(true)}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              Import Commitments
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Commitments List */}
       <CommitmentList
         commitments={commitments}
@@ -414,6 +496,12 @@ export const Dashboard = () => {
         onCancel={() => setShowCommitmentForm(false)}
         isVisible={showCommitmentForm}
         currency="MYR"
+      />
+
+      <ImportWizardModal
+        isOpen={showImportWizard}
+        onClose={() => setShowImportWizard(false)}
+        onImport={handleImportCommitments}
       />
     </div>
   );
