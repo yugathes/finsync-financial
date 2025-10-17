@@ -1,0 +1,82 @@
+[
+  {
+    "type": "static",
+    "title": "Rent Payment",
+    "category": "Housing",
+    "amount": 1500,
+    "recurring": true,
+    "startDate": "2024-01-01"
+  },
+  {
+    "type": "static",
+    "title": "Internet Bill",
+    "category": "Utilities",
+    "amount": 80,
+    "recurring": true,
+    "startDate": "2024-01-01"
+  },
+  {
+    "type": "dynamic",
+    "title": "Groceries Jan",
+    "category": "Food",
+    "amount": 300,
+    "recurring": false,
+    "startDate": "2024-01-15"
+  },
+  {
+    "type": "dynamic",
+    "title": "Gas Station",
+    "category": "Transportation",
+    "amount": 50,
+    "recurring": false,
+    "startDate": "2024-01-20"
+  },
+  {
+    "type": "static",
+    "title": "Phone Bill",
+    "category": "Utilities",
+    "amount": 45,
+    "recurring": true,
+    "startDate": "2024-01-05"
+  },
+  {
+    "type": "dynamic",
+    "title": "Restaurant Dinner",
+    "category": "Food",
+    "amount": 75,
+    "recurring": false,
+    "startDate": "2024-01-25"
+  },
+  {
+    "type": "static",
+    "title": "Gym Membership",
+    "category": "Health",
+    "amount": 40,
+    "recurring": true,
+    "startDate": "2024-01-01"
+  },
+  {
+    "type": "dynamic",
+    "title": "Shopping",
+    "category": "Shopping",
+    "amount": 120,
+    "recurring": false,
+    "startDate": "2024-01-18"
+  },
+  {
+    "type": "static",
+    "title": "Insurance",
+    "category": "Insurance",
+    "amount": 200,
+    "recurring": true,
+    "startDate": "2024-01-01"
+  },
+  {
+    "type": "dynamic",
+    "title": "Coffee Shop",
+    "category": "Food",
+    "amount": 25,
+    "recurring": false,
+    "startDate": "2024-01-22"
+  }
+]

@@ -12,6 +12,7 @@ export interface CommitmentWithStatus {
   category: string;
   recurring: boolean;
   shared: boolean;
+  isImported?: boolean;
   isPaid: boolean;
   amountPaid?: string;
   startDate: string;
@@ -75,7 +76,15 @@ export const CommitmentList: React.FC<CommitmentListProps> = ({
             {commitment.title}
           </span>
           {commitment.shared && (
-            <Users className="h-4 w-4 text-blue-500 flex-shrink-0" />
+            <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
+              <Users className="h-3 w-3 mr-1" />
+              Shared
+            </Badge>
+          )}
+          {commitment.isImported && (
+            <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700">
+              Imported
+            </Badge>
           )}
           {commitment.recurring && (
             <Calendar className="h-4 w-4 text-purple-500 flex-shrink-0" />

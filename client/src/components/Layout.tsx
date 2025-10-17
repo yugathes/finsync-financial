@@ -34,7 +34,13 @@ export const Layout = ({ children, title = "FinSync", showHero = false }: Layout
             </div>
             
             <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="icon" className="text-white hover:bg-white/20">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-white hover:bg-white/20"
+                onClick={() => navigate('/groups')}
+                title="Groups"
+              >
                 <Users className="h-5 w-5" />
               </Button>
               <Button variant="ghost" size="icon" className="text-white hover:bg-white/20">

@@ -1,0 +1,11 @@
+type,title,category,amount,recurring,startDate
+static,Rent Payment,Housing,1500,true,2024-01-01
+static,Internet Bill,Utilities,80,true,2024-01-01
+dynamic,Groceries Jan,Food,300,false,2024-01-15
+dynamic,Gas Station,Transportation,50,false,2024-01-20
+static,Phone Bill,Utilities,45,true,2024-01-05
+dynamic,Restaurant Dinner,Food,75,false,2024-01-25
+static,Gym Membership,Health,40,true,2024-01-01
+dynamic,Shopping,Shopping,120,false,2024-01-18
+static,Insurance,Insurance,200,true,2024-01-01
+dynamic,Coffee Shop,Food,25,false,2024-01-22

@@ -15,8 +15,16 @@ export async function getCommitmentsForMonth(req: Request, res: Response) {
   try {
     const userId = req.params.userId;
     const month = req.params.month;
+    const includeShared = req.query.includeShared === 'true';
+    const includeImported = req.query.includeImported === 'true';
+    const includePersonal = req.query.includePersonal !== 'false';
+    
     console.log('Fetching commitments for user:', userId, 'month:', month);
-    const commitments = await CommitmentService.getCommitmentsForMonth(userId, month);
+    const commitments = await CommitmentService.getCommitmentsForMonth(userId, month, {
+      includeShared,
+      includeImported,
+      includePersonal,
+    });
     res.json(commitments);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch commitments for month' });
@@ -64,5 +72,25 @@ export async function deleteCommitment(req: Request, res: Response) {
     res.json({ success: true, message: 'Commitment deleted successfully' });
   } catch (error) {
     res.status(400).json({ error: 'Failed to delete commitment' });
+  }
+}
+
+export async function importCommitments(req: Request, res: Response) {
+  try {
+    const { userId, commitments } = req.body;
+    
+    if (!userId || !commitments || !Array.isArray(commitments)) {
+      return res.status(400).json({ error: 'Missing required fields: userId and commitments array' });
+    }
+
+    const importedCommitments = await CommitmentService.importCommitments(userId, commitments);
+    res.json({
+      success: true,
+      count: importedCommitments.length,
+      commitments: importedCommitments,
+    });
+  } catch (error: any) {
+    console.error('Error importing commitments:', error);
+    res.status(400).json({ error: 'Failed to import commitments', details: error.message });
   }
 }

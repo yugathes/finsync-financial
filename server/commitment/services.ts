@@ -5,14 +5,73 @@ import { InsertCommitment } from 'lib/types';
 class CommitmentService {
   async getCommitmentsForMonth(
     userId: string,
-    month: string
+    month: string,
+    filters?: {
+      includeShared?: boolean;
+      includeImported?: boolean;
+      includePersonal?: boolean;
+    }
   ): Promise<(Commitment & { isPaid: boolean; amountPaid?: string })[]> {
     try {
-      console.log('Fetching commitments for user:', userId, 'month:', month);
+      console.log('Fetching commitments for user:', userId, 'month:', month, 'filters:', filters);
+
+      // Build where clause based on filters
+      const whereClause: any = {
+        OR: [],
+      };
+
+      // Default: include personal commitments
+      const includePersonal = filters?.includePersonal !== false;
+      const includeShared = filters?.includeShared === true;
+      const includeImported = filters?.includeImported === true;
+
+      if (includePersonal) {
+        whereClause.OR.push({
+          userId: userId,
+          shared: false,
+          isImported: false,
+        });
+      }
+
+      if (includeShared) {
+        // Get user's group memberships
+        const memberships = await prisma.groupMember.findMany({
+          where: {
+            userId: userId,
+            status: 'accepted',
+          },
+          select: { groupId: true },
+        });
+        
+        const groupIds = memberships.map(m => m.groupId);
+        
+        if (groupIds.length > 0) {
+          whereClause.OR.push({
+            groupId: { in: groupIds },
+            shared: true,
+          });
+        }
+      }
+
+      if (includeImported) {
+        whereClause.OR.push({
+          userId: userId,
+          isImported: true,
+        });
+      }
+
+      // If no filters specified, default to personal only
+      if (whereClause.OR.length === 0) {
+        whereClause.OR.push({
+          userId: userId,
+          shared: false,
+          isImported: false,
+        });
+      }
 
       // Get all commitments for the user with payments
       const commitments = await prisma.commitment.findMany({
-        where: { userId: userId },
+        where: whereClause,
         include: {
           payments: {
             where: { month: month },
@@ -20,7 +79,7 @@ class CommitmentService {
         },
       });
 
-      console.log('Commitments fetched:', commitments);
+      console.log('Commitments fetched:', commitments.length);
 
       // Map commitments with payment status
       const commitmentsWithPayments = commitments.map((commitment: any) => {
@@ -103,6 +162,34 @@ class CommitmentService {
       return !!payment;
     } catch (error) {
       return false;
+    }
+  }
+
+  async importCommitments(userId: number, commitments: any[]): Promise<Commitment[]> {
+    try {
+      const importedCommitments = await Promise.all(
+        commitments.map(async (commitment) => {
+          return await prisma.commitment.create({
+            data: {
+              userId: String(userId),
+              type: commitment.type || 'static',
+              title: commitment.title,
+              category: commitment.category,
+              amount: commitment.amount,
+              recurring: commitment.recurring ?? false,
+              shared: false,
+              isImported: true,
+              importedAt: new Date(),
+              startDate: commitment.startDate ? new Date(commitment.startDate) : new Date(),
+              createdAt: commitment.createdAt ? new Date(commitment.createdAt) : new Date(),
+            },
+          });
+        })
+      );
+      return importedCommitments;
+    } catch (error) {
+      console.error('Error importing commitments:', error);
+      throw error;
     }
   }
 }

@@ -10,6 +10,7 @@ import { useSession } from './hooks/useSession';
 import LoginPage from './auth/LoginPage';
 import RegisterPage from './auth/RegisterPage';
 import DashboardPage from './pages/Dashboard';
+import GroupsPage from './pages/GroupsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const AppRoutes = () => {
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/groups" element={<GroupsPage />} />
           </Route>
 
           {/* Default route */}
