@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSession } from '../hooks/useSession';
+import { Layout } from '@/components/Layout';
 import { GroupList, Group, Invitation } from '../components/Groups/GroupList';
 import { GroupDetail } from '../components/Groups/GroupDetail';
 import { CreateGroupModal } from '../components/Groups/CreateGroupModal';
@@ -256,17 +257,17 @@ export const GroupsPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-6">
+      <Layout title="FinSync - Groups">
         <div className="max-w-6xl mx-auto">
           <div className="text-center py-12">Loading...</div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-6">
-      <div className="max-w-6xl mx-auto">
+    <Layout title="FinSync - Groups">
+      <div className="max-w-6xl mx-auto space-y-6">
         {!selectedGroup ? (
           <GroupList
             groups={groups}
@@ -288,20 +289,20 @@ export const GroupsPage = () => {
             onMarkUnpaid={handleMarkUnpaid}
           />
         )}
+
+        <CreateGroupModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onCreate={handleCreateGroup}
+        />
+
+        <InviteMemberModal
+          isOpen={showInviteModal}
+          onClose={() => setShowInviteModal(false)}
+          onInvite={handleInviteMember}
+        />
       </div>
-
-      <CreateGroupModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onCreate={handleCreateGroup}
-      />
-
-      <InviteMemberModal
-        isOpen={showInviteModal}
-        onClose={() => setShowInviteModal(false)}
-        onInvite={handleInviteMember}
-      />
-    </div>
+    </Layout>
   );
 };
 
