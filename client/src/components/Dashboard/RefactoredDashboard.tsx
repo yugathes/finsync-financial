@@ -91,15 +91,28 @@ export const RefactoredDashboard = () => {
         `/api/commitments/user/${user.id}/month/${currentMonth}?${params}`
       );
       
-      // Load income
-      const incomeData = await apiRequest(`/api/monthly-income/${user.id}/${currentMonth}`);
+      // Load income - handle 404 gracefully (no income set for this month)
+      let incomeAmount = 0;
+      try {
+        const incomeData = await apiRequest(`/api/monthly-income/${user.id}/${currentMonth}`);
+        incomeAmount = incomeData?.amount ? parseFloat(incomeData.amount) : 0;
+      } catch (error: any) {
+        // If income not found for this month, default to 0 (no error message)
+        if (error.message?.includes('not found') || error.message?.includes('404')) {
+          console.log(`[RefactoredDashboard] No income record for ${currentMonth}, defaulting to 0`);
+          incomeAmount = 0;
+        } else {
+          // For other errors, re-throw
+          throw error;
+        }
+      }
       
       console.log(`[RefactoredDashboard] Dashboard data loaded successfully for ${currentMonth}:`, {
-        income: incomeData?.amount || 0,
+        income: incomeAmount,
         commitmentsCount: commitmentsData?.length || 0
       });
       
-      setMonthlyIncome(incomeData?.amount ? parseFloat(incomeData.amount) : 0);
+      setMonthlyIncome(incomeAmount);
       setCommitments(commitmentsData || []);
     } catch (error: any) {
       console.error('Error loading dashboard data:', error);
