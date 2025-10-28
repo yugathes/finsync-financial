@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Check, Users, Clock } from 'lucide-react';
+import { Plus, Check, Users, Clock, Trash2 } from 'lucide-react';
 
 interface Commitment {
   id: string;
@@ -19,9 +19,10 @@ interface CommitmentsListProps {
   currency?: string;
   onMarkPaid: (id: string, amount: number) => void;
   onAddNew: () => void;
+  onDelete?: (id: string) => void;
 }
 
-export const CommitmentsList = ({ commitments, currency = 'MYR', onMarkPaid, onAddNew }: CommitmentsListProps) => {
+export const CommitmentsList = ({ commitments, currency = 'MYR', onMarkPaid, onAddNew, onDelete }: CommitmentsListProps) => {
   const unpaidCommitments = commitments.filter(c => !c.isPaid);
   const paidCommitments = commitments.filter(c => c.isPaid);
   const totalUnpaid = unpaidCommitments.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
@@ -74,6 +75,7 @@ export const CommitmentsList = ({ commitments, currency = 'MYR', onMarkPaid, onA
                     commitment={commitment}
                     currency={currency}
                     onMarkPaid={onMarkPaid}
+                    onDelete={onDelete}
                   />
                 ))}
               </div>
@@ -94,6 +96,7 @@ export const CommitmentsList = ({ commitments, currency = 'MYR', onMarkPaid, onA
                     commitment={commitment}
                     currency={currency}
                     onMarkPaid={onMarkPaid}
+                    onDelete={onDelete}
                   />
                 ))}
               </div>
@@ -109,9 +112,10 @@ interface CommitmentItemProps {
   commitment: Commitment;
   currency: string;
   onMarkPaid: (id: string, amount: number) => void;
+  onDelete?: (id: string) => void;
 }
 
-const CommitmentItem = ({ commitment, currency, onMarkPaid }: CommitmentItemProps) => {
+const CommitmentItem = ({ commitment, currency, onMarkPaid, onDelete }: CommitmentItemProps) => {
   return (
     <div
       className={`flex items-center justify-between p-4 rounded-xl border transition-smooth animate-fade-in ${
@@ -135,21 +139,34 @@ const CommitmentItem = ({ commitment, currency, onMarkPaid }: CommitmentItemProp
         </div>
       </div>
 
-      <div className="flex items-center gap-3 ml-4">
+      <div className="flex items-center gap-2 ml-4">
         <div className={`text-lg font-semibold text-right ${commitment.isPaid ? 'text-muted-foreground' : ''}`}>
           <div>{currency}</div>
           <div>{commitment.amount.toLocaleString()}</div>
         </div>
-        <Button
-          variant={commitment.isPaid ? 'secondary' : 'success'}
-          size="sm"
-          onClick={() => onMarkPaid(commitment.id, commitment.amount)}
-          disabled={commitment.isPaid}
-          className="flex-shrink-0"
-        >
-          <Check className="h-4 w-4 sm:mr-1" />
-          <span className="hidden sm:inline">{commitment.isPaid ? 'Paid' : 'Mark Paid'}</span>
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant={commitment.isPaid ? 'secondary' : 'success'}
+            size="sm"
+            onClick={() => onMarkPaid(commitment.id, commitment.amount)}
+            disabled={commitment.isPaid}
+            className="flex-shrink-0"
+          >
+            <Check className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">{commitment.isPaid ? 'Paid' : 'Mark Paid'}</span>
+          </Button>
+          
+          {onDelete && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDelete(commitment.id)}
+              className="flex-shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

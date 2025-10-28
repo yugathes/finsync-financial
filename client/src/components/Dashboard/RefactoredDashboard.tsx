@@ -468,6 +468,7 @@ export const RefactoredDashboard = () => {
           currency="MYR"
           onMarkPaid={handleMarkPaid}
           onAddNew={() => setShowCommitmentForm(true)}
+          onDelete={handleDeleteCommitment}
         />
 
         {/* Floating Action Button (Mobile Only) */}
