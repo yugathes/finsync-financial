@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { X, DollarSign, Tag, Calendar } from "lucide-react";
+import { useSession } from "@/hooks/useSession";
 
 interface CommitmentFormProps {
   onSubmit: (commitment: {
@@ -13,9 +15,18 @@ interface CommitmentFormProps {
     amount: number;
     type: 'static' | 'dynamic';
     category: string;
+    recurring?: boolean;
+    shared?: boolean;
+    groupId?: string;
   }) => void;
   onCancel: () => void;
   isVisible: boolean;
+}
+
+interface Group {
+  id: string;
+  name: string;
+  ownerId: string;
 }
 
 const categories = [
@@ -24,27 +35,63 @@ const categories = [
 ];
 
 export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentFormProps) => {
+  const { user } = useSession();
+  const [groups, setGroups] = useState<Group[]>([]);
   const [formData, setFormData] = useState<{
     title: string;
     amount: string;
     type: 'static' | 'dynamic';
     category: string;
+    recurring: boolean;
+    shared: boolean;
+    groupId: string;
   }>({
     title: "",
     amount: "",
     type: "static",
-    category: ""
+    category: "",
+    recurring: true,
+    shared: false,
+    groupId: ""
   });
+
+  // Load user's groups when form becomes visible
+  useEffect(() => {
+    const loadGroups = async () => {
+      if (!user?.id || !isVisible) return;
+      
+      try {
+        const response = await fetch(`/api/groups/user/${user.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setGroups(data);
+        }
+      } catch (error) {
+        console.error('Failed to load groups:', error);
+      }
+    };
+    
+    loadGroups();
+  }, [user?.id, isVisible]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.amount || !formData.category) return;
     
+    // Validate group selection if shared is enabled
+    if (formData.shared && !formData.groupId) {
+      alert('Please select a group for shared commitment');
+      return;
+    }
+    
     onSubmit({
       title: formData.title,
       amount: parseFloat(formData.amount),
       type: formData.type,
-      category: formData.category
+      category: formData.category,
+      recurring: formData.recurring,
+      shared: formData.shared,
+      groupId: formData.shared ? formData.groupId : undefined
     });
     
     // Reset form
@@ -52,7 +99,10 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
       title: "",
       amount: "",
       type: "static",
-      category: ""
+      category: "",
+      recurring: true,
+      shared: false,
+      groupId: ""
     });
   };
 
@@ -145,6 +195,65 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Recurring and Shared Options */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="recurring">Recurring Monthly</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Automatically appears every month
+                  </p>
+                </div>
+                <Switch
+                  id="recurring"
+                  checked={formData.recurring}
+                  onCheckedChange={(checked) => setFormData({ ...formData, recurring: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="shared">Shared Commitment</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Split with family/roommates
+                  </p>
+                </div>
+                <Switch
+                  id="shared"
+                  checked={formData.shared}
+                  onCheckedChange={(checked) => setFormData({ ...formData, shared: checked, groupId: checked ? formData.groupId : "" })}
+                />
+              </div>
+
+              {/* Group Selector - Only show when shared is enabled */}
+              {formData.shared && (
+                <div className="space-y-2 pl-4 border-l-2 border-primary/20">
+                  <Label htmlFor="group">Select Group</Label>
+                  {groups.length > 0 ? (
+                    <Select 
+                      value={formData.groupId} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, groupId: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a group to share with" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {groups.map((group) => (
+                          <SelectItem key={group.id} value={group.id}>
+                            {group.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md">
+                      No groups available. Create a group first in the Groups page.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}

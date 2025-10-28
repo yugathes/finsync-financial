@@ -5,11 +5,16 @@ import { BalanceCard } from './BalanceCard';
 import { CommitmentsList } from './CommitmentsList';
 import { CommitmentForm } from '../Commitments/CommitmentForm';
 import { IncomeModal } from './IncomeModal';
+import { ImportWizardModal } from '../Commitments/ImportWizardModal';
+import { DeleteConfirmationModal } from '../Commitments/DeleteConfirmationModal';
 import { FloatingActionButton } from '../ui/FloatingActionButton';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { PlusCircle, TrendingUp, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { PlusCircle, TrendingUp, Calendar, ChevronLeft, ChevronRight, Upload, Users, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { CommitmentWithStatus } from '../Commitments/CommitmentList';
 
 // API helper functions
 const apiRequest = async (url: string, options: any = {}) => {
@@ -41,7 +46,14 @@ export const RefactoredDashboard = () => {
   const [commitments, setCommitments] = useState<any[]>([]);
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [showCommitmentForm, setShowCommitmentForm] = useState(false);
+  const [showImportWizard, setShowImportWizard] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [commitmentToDelete, setCommitmentToDelete] = useState<CommitmentWithStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Filter state
+  const [includeShared, setIncludeShared] = useState(false);
+  const [includeImported, setIncludeImported] = useState(false);
 
   // Helper functions
   const getCurrentMonth = () => new Date().toISOString().slice(0, 7);
@@ -72,16 +84,40 @@ export const RefactoredDashboard = () => {
       
       console.log(`[RefactoredDashboard] Loading dashboard data for user ${user.id} and month ${currentMonth}`);
       
-      // Load dashboard summary
-      const summary = await apiRequest(`/api/dashboard/${user.id}/${currentMonth}`);
-      
-      console.log(`[RefactoredDashboard] Dashboard data loaded successfully for ${currentMonth}:`, {
-        income: summary.income,
-        commitmentsCount: summary.commitmentsList?.length || 0
+      // Build query parameters for filters
+      const params = new URLSearchParams({
+        includeShared: includeShared.toString(),
+        includeImported: includeImported.toString(),
       });
       
-      setMonthlyIncome(summary.income || 0);
-      setCommitments(summary.commitmentsList || []);
+      // Load commitments with filters
+      const commitmentsData = await apiRequest(
+        `/api/commitments/user/${user.id}/month/${currentMonth}?${params}`
+      );
+      
+      // Load income - handle 404 gracefully (no income set for this month)
+      let incomeAmount = 0;
+      try {
+        const incomeData = await apiRequest(`/api/monthly-income/${user.id}/${currentMonth}`);
+        incomeAmount = incomeData?.amount ? parseFloat(incomeData.amount) : 0;
+      } catch (error: any) {
+        // If income not found for this month, default to 0 (no error message)
+        if (error.message?.includes('not found') || error.message?.includes('404')) {
+          console.log(`[RefactoredDashboard] No income record for ${currentMonth}, defaulting to 0`);
+          incomeAmount = 0;
+        } else {
+          // For other errors, re-throw
+          throw error;
+        }
+      }
+      
+      console.log(`[RefactoredDashboard] Dashboard data loaded successfully for ${currentMonth}:`, {
+        income: incomeAmount,
+        commitmentsCount: commitmentsData?.length || 0
+      });
+      
+      setMonthlyIncome(incomeAmount);
+      setCommitments(commitmentsData || []);
     } catch (error: any) {
       console.error('Error loading dashboard data:', error);
       toast({
@@ -92,7 +128,7 @@ export const RefactoredDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, currentMonth, toast]);
+  }, [user?.id, currentMonth, includeShared, includeImported, toast]);
 
   // Load data when user or month changes
   useEffect(() => {
@@ -204,15 +240,39 @@ export const RefactoredDashboard = () => {
   };
 
   const handleDeleteCommitment = async (commitmentId: string) => {
-    if (!window.confirm('Are you sure you want to delete this commitment?')) return;
+    // Find the commitment and show delete modal
+    const commitment = commitments.find(c => c.id === commitmentId);
+    if (commitment) {
+      setCommitmentToDelete(commitment);
+      setShowDeleteModal(true);
+    }
+  };
+
+  const handleConfirmDelete = async (deleteScope: 'single' | 'all') => {
+    if (!commitmentToDelete) return;
+    
     try {
-      await apiRequest(`/api/commitments/${commitmentId}`, {
+      const params = new URLSearchParams();
+      if (deleteScope === 'single' && commitmentToDelete.recurring) {
+        params.append('scope', 'single');
+        params.append('month', currentMonth);
+      } else {
+        params.append('scope', 'all');
+      }
+      
+      await apiRequest(`/api/commitments/${commitmentToDelete.id}?${params}`, {
         method: 'DELETE',
       });
+      
       await loadDashboardData();
+      setShowDeleteModal(false);
+      setCommitmentToDelete(null);
+      
       toast({
         title: 'Commitment deleted!',
-        description: 'Commitment has been removed',
+        description: deleteScope === 'single' 
+          ? 'Commitment removed for this month'
+          : 'Commitment deleted permanently',
       });
     } catch (error: any) {
       toast({
@@ -220,6 +280,31 @@ export const RefactoredDashboard = () => {
         description: error.message || 'Failed to delete commitment',
         variant: 'destructive',
       });
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setCommitmentToDelete(null);
+  };
+
+  const handleImportCommitments = async (importedCommitments: any[]) => {
+    if (!user?.id) return;
+    try {
+      await apiRequest('/api/commitments/import', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: user.id,
+          commitments: importedCommitments,
+        }),
+      });
+      await loadDashboardData();
+      toast({
+        title: "Import Successful",
+        description: `${importedCommitments.length} commitment(s) imported`,
+      });
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to import commitments');
     }
   };
 
@@ -334,12 +419,56 @@ export const RefactoredDashboard = () => {
           </Card>
         </div>
 
+        {/* Filters and Actions */}
+        <Card className="bg-white shadow-lg border-0">
+          <CardHeader>
+            <CardTitle className="text-lg">View Options</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="shared-filter"
+                    checked={includeShared}
+                    onCheckedChange={setIncludeShared}
+                  />
+                  <Label htmlFor="shared-filter" className="flex items-center gap-2 cursor-pointer">
+                    <Users className="h-4 w-4 text-blue-600" />
+                    Show Shared Commitments
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="imported-filter"
+                    checked={includeImported}
+                    onCheckedChange={setIncludeImported}
+                  />
+                  <Label htmlFor="imported-filter" className="flex items-center gap-2 cursor-pointer">
+                    <FileText className="h-4 w-4 text-purple-600" />
+                    Show Imported Records
+                  </Label>
+                </div>
+              </div>
+              <Button
+                onClick={() => setShowImportWizard(true)}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                Import Commitments
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Commitments List */}
         <CommitmentsList
           commitments={commitments}
           currency="MYR"
           onMarkPaid={handleMarkPaid}
           onAddNew={() => setShowCommitmentForm(true)}
+          onDelete={handleDeleteCommitment}
         />
 
         {/* Floating Action Button (Mobile Only) */}
@@ -358,6 +487,20 @@ export const RefactoredDashboard = () => {
           currency="MYR"
           onSubmit={handleUpdateIncome}
           onCancel={() => setShowIncomeModal(false)}
+        />
+
+        <ImportWizardModal
+          isOpen={showImportWizard}
+          onClose={() => setShowImportWizard(false)}
+          onImport={handleImportCommitments}
+        />
+
+        <DeleteConfirmationModal
+          isOpen={showDeleteModal}
+          commitment={commitmentToDelete}
+          currentMonth={currentMonth}
+          onConfirm={handleConfirmDelete}
+          onCancel={handleCancelDelete}
         />
       </div>
     </Layout>

@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Users, Settings, Menu, LogOut } from "lucide-react";
+import { Users, Settings, Menu, LogOut, Home } from "lucide-react";
 import { useSession } from "@/hooks/useSession";
 import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/financial-hero.jpg";
@@ -34,7 +34,22 @@ export const Layout = ({ children, title = "FinSync", showHero = false }: Layout
             </div>
             
             <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="icon" className="text-white hover:bg-white/20">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-white hover:bg-white/20"
+                onClick={() => navigate('/dashboard')}
+                title="Home"
+              >
+                <Home className="h-5 w-5" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-white hover:bg-white/20"
+                onClick={() => navigate('/groups')}
+                title="Groups"
+              >
                 <Users className="h-5 w-5" />
               </Button>
               <Button variant="ghost" size="icon" className="text-white hover:bg-white/20">
