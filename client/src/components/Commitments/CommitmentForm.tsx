@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { X, DollarSign, Tag, Calendar } from "lucide-react";
@@ -13,6 +14,8 @@ interface CommitmentFormProps {
     amount: number;
     type: 'static' | 'dynamic';
     category: string;
+    recurring?: boolean;
+    shared?: boolean;
   }) => void;
   onCancel: () => void;
   isVisible: boolean;
@@ -29,11 +32,15 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
     amount: string;
     type: 'static' | 'dynamic';
     category: string;
+    recurring: boolean;
+    shared: boolean;
   }>({
     title: "",
     amount: "",
     type: "static",
-    category: ""
+    category: "",
+    recurring: true,
+    shared: false
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -44,7 +51,9 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
       title: formData.title,
       amount: parseFloat(formData.amount),
       type: formData.type,
-      category: formData.category
+      category: formData.category,
+      recurring: formData.recurring,
+      shared: formData.shared
     });
     
     // Reset form
@@ -52,7 +61,9 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
       title: "",
       amount: "",
       type: "static",
-      category: ""
+      category: "",
+      recurring: true,
+      shared: false
     });
   };
 
@@ -145,6 +156,37 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Recurring and Shared Options */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="recurring">Recurring Monthly</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Automatically appears every month
+                  </p>
+                </div>
+                <Switch
+                  id="recurring"
+                  checked={formData.recurring}
+                  onCheckedChange={(checked) => setFormData({ ...formData, recurring: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="shared">Shared Commitment</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Split with family/roommates
+                  </p>
+                </div>
+                <Switch
+                  id="shared"
+                  checked={formData.shared}
+                  onCheckedChange={(checked) => setFormData({ ...formData, shared: checked })}
+                />
+              </div>
             </div>
 
             {/* Action Buttons */}
