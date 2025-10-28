@@ -6,6 +6,7 @@ import { CommitmentsList } from './CommitmentsList';
 import { CommitmentForm } from '../Commitments/CommitmentForm';
 import { IncomeModal } from './IncomeModal';
 import { ImportWizardModal } from '../Commitments/ImportWizardModal';
+import { DeleteConfirmationModal } from '../Commitments/DeleteConfirmationModal';
 import { FloatingActionButton } from '../ui/FloatingActionButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { PlusCircle, TrendingUp, Calendar, ChevronLeft, ChevronRight, Upload, Users, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { CommitmentWithStatus } from '../Commitments/CommitmentList';
 
 // API helper functions
 const apiRequest = async (url: string, options: any = {}) => {
@@ -45,6 +47,8 @@ export const RefactoredDashboard = () => {
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [showCommitmentForm, setShowCommitmentForm] = useState(false);
   const [showImportWizard, setShowImportWizard] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [commitmentToDelete, setCommitmentToDelete] = useState<CommitmentWithStatus | null>(null);
   const [loading, setLoading] = useState(true);
   
   // Filter state
@@ -236,15 +240,39 @@ export const RefactoredDashboard = () => {
   };
 
   const handleDeleteCommitment = async (commitmentId: string) => {
-    if (!window.confirm('Are you sure you want to delete this commitment?')) return;
+    // Find the commitment and show delete modal
+    const commitment = commitments.find(c => c.id === commitmentId);
+    if (commitment) {
+      setCommitmentToDelete(commitment);
+      setShowDeleteModal(true);
+    }
+  };
+
+  const handleConfirmDelete = async (deleteScope: 'single' | 'all') => {
+    if (!commitmentToDelete) return;
+    
     try {
-      await apiRequest(`/api/commitments/${commitmentId}`, {
+      const params = new URLSearchParams();
+      if (deleteScope === 'single' && commitmentToDelete.recurring) {
+        params.append('scope', 'single');
+        params.append('month', currentMonth);
+      } else {
+        params.append('scope', 'all');
+      }
+      
+      await apiRequest(`/api/commitments/${commitmentToDelete.id}?${params}`, {
         method: 'DELETE',
       });
+      
       await loadDashboardData();
+      setShowDeleteModal(false);
+      setCommitmentToDelete(null);
+      
       toast({
         title: 'Commitment deleted!',
-        description: 'Commitment has been removed',
+        description: deleteScope === 'single' 
+          ? 'Commitment removed for this month'
+          : 'Commitment deleted permanently',
       });
     } catch (error: any) {
       toast({
@@ -253,6 +281,11 @@ export const RefactoredDashboard = () => {
         variant: 'destructive',
       });
     }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setCommitmentToDelete(null);
   };
 
   const handleImportCommitments = async (importedCommitments: any[]) => {
@@ -459,6 +492,14 @@ export const RefactoredDashboard = () => {
           isOpen={showImportWizard}
           onClose={() => setShowImportWizard(false)}
           onImport={handleImportCommitments}
+        />
+
+        <DeleteConfirmationModal
+          isOpen={showDeleteModal}
+          commitment={commitmentToDelete}
+          currentMonth={currentMonth}
+          onConfirm={handleConfirmDelete}
+          onCancel={handleCancelDelete}
         />
       </div>
     </Layout>

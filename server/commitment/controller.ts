@@ -68,8 +68,18 @@ export async function updateCommitment(req: Request, res: Response) {
 export async function deleteCommitment(req: Request, res: Response) {
   try {
     const id = req.params.id;
-    await CommitmentService.deleteCommitment(id);
-    res.json({ success: true, message: 'Commitment deleted successfully' });
+    const deleteScope = req.query.scope as 'single' | 'all' | undefined;
+    const month = req.query.month as string | undefined;
+    
+    if (deleteScope === 'single' && month) {
+      // Delete only for specific month (delete payment record)
+      await CommitmentService.deleteCommitmentForMonth(id, month);
+      res.json({ success: true, message: 'Commitment deleted for this month' });
+    } else {
+      // Delete permanently (commitment and all payments)
+      await CommitmentService.deleteCommitment(id);
+      res.json({ success: true, message: 'Commitment deleted permanently' });
+    }
   } catch (error) {
     res.status(400).json({ error: 'Failed to delete commitment' });
   }

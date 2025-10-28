@@ -143,11 +143,33 @@ class CommitmentService {
 
   async deleteCommitment(id: string): Promise<void> {
     try {
+      // Delete all payment records first
+      await prisma.commitmentPayment.deleteMany({
+        where: { commitmentId: id },
+      });
+      
+      // Then delete the commitment
       await prisma.commitment.delete({
         where: { id: id },
       });
     } catch (error) {
       console.error('Error deleting commitment:', error);
+      throw error;
+    }
+  }
+
+  async deleteCommitmentForMonth(id: string, month: string): Promise<void> {
+    try {
+      // Only delete the payment record for this specific month
+      // The commitment itself remains for other months
+      await prisma.commitmentPayment.deleteMany({
+        where: {
+          commitmentId: id,
+          month: month,
+        },
+      });
+    } catch (error) {
+      console.error('Error deleting commitment for month:', error);
       throw error;
     }
   }
