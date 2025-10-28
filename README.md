@@ -86,6 +86,14 @@ See `prisma/schema.prisma` for the complete schema definition.
 - `npm run build:dev` - Build for development
 - `npm start` - Start production server
 
+### Testing
+- `npm run test:e2e` - Run E2E tests
+- `npm run test:e2e:ui` - Run tests in UI mode
+- `npm run test:e2e:headed` - Run tests with visible browser
+- `npm run test:e2e:debug` - Run tests in debug mode
+- `npm run test:e2e:report` - View test report
+- `npm run test:e2e:codegen` - Record new tests
+
 ## 📁 Project Structure
 
 ```
@@ -97,13 +105,25 @@ See `prisma/schema.prisma` for the complete schema definition.
 │   ├── user/             # User management
 │   ├── db.ts             # Database connection
 │   └── storage.ts        # Data access layer
+├── tests/                 # E2E test suite
+│   ├── e2e/              # Test specifications
+│   │   ├── auth.spec.ts
+│   │   ├── dashboard.spec.ts
+│   │   ├── commitments.spec.ts
+│   │   ├── shared-commitments.spec.ts
+│   │   └── import-records.spec.ts
+│   └── utils/            # Test helpers
+│       ├── loginHelper.ts
+│       ├── createCommitmentHelper.ts
+│       └── dbHelper.ts
 ├── lib/                   # Shared utilities
 │   ├── prisma.ts         # Prisma client
 │   └── types.ts          # TypeScript types
 ├── prisma/               # Database schema
 │   └── schema.prisma     # Prisma schema
 └── docs/                 # Documentation
-    └── prisma.md         # Prisma ORM guide
+    ├── prisma.md         # Prisma ORM guide
+    └── testing.md        # E2E testing guide
 ```
 
 ## 🔍 API Endpoints
@@ -131,14 +151,51 @@ See `prisma/schema.prisma` for the complete schema definition.
 ## 📚 Documentation
 
 - [Prisma ORM Guide](./docs/prisma.md) - Complete guide to using Prisma in this project
-- [API Documentation] - (To be added)
+- [E2E Testing Guide](./docs/testing.md) - Comprehensive testing documentation
+- [Test Suite README](./tests/README.md) - Quick reference for E2E tests
 
 ## 🧪 Testing
 
+The project includes a comprehensive E2E test suite using Playwright + TypeScript.
+
+### Quick Start
 ```bash
-# Run tests (when available)
-npm test
+# Install test dependencies
+npm install
+npx playwright install chromium
+
+# Run all E2E tests
+npm run test:e2e
+
+# Run tests in UI mode (interactive)
+npm run test:e2e:ui
+
+# Run tests with visible browser
+npm run test:e2e:headed
+
+# View test report
+npm run test:e2e:report
 ```
+
+### Test Coverage
+✅ Authentication flows (register, login, logout, protected routes)  
+✅ Dashboard functionality with real-time updates  
+✅ Commitment CRUD operations with deletion support  
+✅ Shared commitments and group management  
+✅ Historical data import (CSV/JSON)  
+✅ Database verification for all operations  
+✅ Dashboard recalculation after changes  
+
+### Documentation
+- [Complete Testing Guide](./docs/testing.md) - Comprehensive E2E testing documentation
+- [Test Suite README](./tests/README.md) - Quick reference for running tests
+- [GitHub Actions Workflow](./.github/workflows/e2e.yml) - CI/CD configuration
+
+### CI/CD Integration
+E2E tests automatically run on:
+- Push to `main` or `develop` branches
+- Pull requests to `main` or `develop`
+- Manual workflow dispatch
 
 ## 🔧 Migration Notes
 

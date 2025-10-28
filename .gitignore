@@ -23,3 +23,9 @@ node_modules/.prisma
 # Validation and backup files
 validate-migration.sh
 *.backup
+
+# Playwright Test Results
+test-results/
+playwright-report/
+playwright/.cache/
+*.zip

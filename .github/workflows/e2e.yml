@@ -1,0 +1,72 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    
+    env:
+      VITE_REACT_APP_SUPABASE_URL: ${{ secrets.VITE_REACT_APP_SUPABASE_URL }}
+      VITE_REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.VITE_REACT_APP_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      PLAYWRIGHT_BASE_URL: http://localhost:5000
+      
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+      
+      - name: Generate Prisma Client
+        run: npm run prisma:generate
+      
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+      
+      - name: Start application server
+        run: |
+          npm start &
+          sleep 10
+          curl -f http://localhost:5000/api/health || exit 1
+        env:
+          NODE_ENV: production
+      
+      - name: Run Playwright tests
+        run: npx playwright test
+        env:
+          CI: true
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+      
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 30
