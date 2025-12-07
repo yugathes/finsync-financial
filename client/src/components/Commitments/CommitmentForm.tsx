@@ -50,7 +50,7 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
     amount: "",
     type: "static",
     category: "",
-    recurring: true,
+    recurring: false,
     shared: false,
     groupId: ""
   });
@@ -100,7 +100,7 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
       amount: "",
       type: "static",
       category: "",
-      recurring: true,
+      recurring: false,
       shared: false,
       groupId: ""
     });

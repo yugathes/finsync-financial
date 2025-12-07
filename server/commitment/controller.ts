@@ -43,7 +43,7 @@ export async function createCommitment(req: Request, res: Response) {
       title,
       category,
       amount,
-      recurring: recurring ?? true,
+      recurring: recurring ?? false,
       shared: shared ?? false,
       groupId,
       startDate: new Date(startDate),
