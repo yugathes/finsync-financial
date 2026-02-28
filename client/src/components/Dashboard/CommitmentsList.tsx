@@ -22,7 +22,13 @@ interface CommitmentsListProps {
   onDelete?: (id: string) => void;
 }
 
-export const CommitmentsList = ({ commitments, currency = 'MYR', onMarkPaid, onAddNew, onDelete }: CommitmentsListProps) => {
+export const CommitmentsList = ({
+  commitments,
+  currency = 'MYR',
+  onMarkPaid,
+  onAddNew,
+  onDelete,
+}: CommitmentsListProps) => {
   const unpaidCommitments = commitments.filter(c => !c.isPaid);
   const paidCommitments = commitments.filter(c => c.isPaid);
   const totalUnpaid = unpaidCommitments.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
@@ -118,55 +124,63 @@ interface CommitmentItemProps {
 const CommitmentItem = ({ commitment, currency, onMarkPaid, onDelete }: CommitmentItemProps) => {
   return (
     <div
-      className={`flex items-center justify-between p-4 rounded-xl border transition-smooth animate-fade-in ${
+      className={`flex flex-col gap-3 p-4 rounded-lg border transition-smooth animate-fade-in ${
         commitment.isPaid
           ? 'bg-muted/30 border-muted opacity-75'
           : 'bg-background border-border hover:shadow-sm hover:border-primary/20'
       }`}
     >
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-2">
-          <span className={`font-medium text-base ${commitment.isPaid ? 'text-muted-foreground line-through' : ''}`}>
+      {/* Header Row: Title, Amount, Menu */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <span
+            className={`font-semibold text-sm leading-tight block ${
+              commitment.isPaid ? 'text-muted-foreground line-through' : ''
+            }`}
+          >
             {commitment.title}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="text-lg font-bold">{currency}</div>
+          <span className={`text-lg font-bold ${commitment.isPaid ? 'text-muted-foreground' : ''}`}>
+            {commitment.amount.toLocaleString()}
           </span>
           {commitment.isShared && <Users className="h-4 w-4 text-primary flex-shrink-0" />}
         </div>
-        <div className="flex items-center gap-2 text-sm">
-          <Badge variant={commitment.type === 'static' ? 'secondary' : 'outline'} className="text-xs">
-            {commitment.type}
-          </Badge>
-          <span className="text-muted-foreground">{commitment.category}</span>
-        </div>
       </div>
 
-      <div className="flex items-center gap-2 ml-4">
-        <div className={`text-lg font-semibold text-right ${commitment.isPaid ? 'text-muted-foreground' : ''}`}>
-          <div>{currency}</div>
-          <div>{commitment.amount.toLocaleString()}</div>
-        </div>
-        <div className="flex items-center gap-1">
+      {/* Category and Badge Row */}
+      <div className="flex items-center gap-2">
+        <Badge variant={commitment.type === 'static' ? 'secondary' : 'outline'} className="text-xs">
+          {commitment.type}
+        </Badge>
+        <span className="text-xs text-muted-foreground">{commitment.category}</span>
+      </div>
+
+      {/* Action Buttons Row */}
+      <div className="flex items-center gap-2 pt-2">
+        <Button
+          variant={commitment.isPaid ? 'secondary' : 'success'}
+          size="sm"
+          onClick={() => onMarkPaid(commitment.id, commitment.amount)}
+          disabled={commitment.isPaid}
+          className="flex-1"
+        >
+          <Check className="h-4 w-4 mr-1" />
+          <span>{commitment.isPaid ? 'Paid' : 'Mark Paid'}</span>
+        </Button>
+
+        {onDelete && (
           <Button
-            variant={commitment.isPaid ? 'secondary' : 'success'}
+            variant="ghost"
             size="sm"
-            onClick={() => onMarkPaid(commitment.id, commitment.amount)}
-            disabled={commitment.isPaid}
-            className="flex-shrink-0"
+            onClick={() => onDelete(commitment.id)}
+            className="text-red-500 hover:text-red-700 hover:bg-red-50"
           >
-            <Check className="h-4 w-4 sm:mr-1" />
-            <span className="hidden sm:inline">{commitment.isPaid ? 'Paid' : 'Mark Paid'}</span>
+            <Trash2 className="h-4 w-4" />
           </Button>
-          
-          {onDelete && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onDelete(commitment.id)}
-              className="flex-shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );
