@@ -73,7 +73,7 @@ esac
 
 # Start the application with PM2
 print_status "Starting application with PM2..."
-pm2 start ecosystem.config.js --env $ENVIRONMENT
+pm2 start ecosystem.config.cjs --env $ENVIRONMENT
 
 # Save PM2 configuration
 print_status "Saving PM2 configuration..."
