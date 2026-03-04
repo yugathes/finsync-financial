@@ -10,7 +10,7 @@ interface Commitment {
   type: 'static' | 'dynamic';
   category: string;
   isPaid: boolean;
-  isShared: boolean;
+  shared: boolean;
   sharedWith?: string[];
 }
 
@@ -133,20 +133,27 @@ const CommitmentItem = ({ commitment, currency, onMarkPaid, onDelete }: Commitme
       {/* Header Row: Title, Amount, Menu */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <span
-            className={`font-semibold text-sm leading-tight block ${
-              commitment.isPaid ? 'text-muted-foreground line-through' : ''
-            }`}
-          >
-            {commitment.title}
-          </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span
+              className={`font-semibold text-sm leading-tight ${
+                commitment.isPaid ? 'text-muted-foreground line-through' : ''
+              }`}
+            >
+              {commitment.title}
+            </span>
+            {commitment.shared && (
+              <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
+                <Users className="h-3 w-3 mr-1" />
+                Shared
+              </Badge>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="text-lg font-bold">{currency}</div>
           <span className={`text-lg font-bold ${commitment.isPaid ? 'text-muted-foreground' : ''}`}>
             {commitment.amount.toLocaleString()}
           </span>
-          {commitment.isShared && <Users className="h-4 w-4 text-primary flex-shrink-0" />}
         </div>
       </div>
 
