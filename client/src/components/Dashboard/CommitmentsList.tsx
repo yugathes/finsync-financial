@@ -10,7 +10,7 @@ interface Commitment {
   type: 'static' | 'dynamic';
   category: string;
   isPaid: boolean;
-  isShared: boolean;
+  shared: boolean;
   sharedWith?: string[];
 }
 
@@ -141,7 +141,7 @@ const CommitmentItem = ({ commitment, currency, onMarkPaid, onDelete }: Commitme
             >
               {commitment.title}
             </span>
-            {commitment.isShared && (
+            {commitment.shared && (
               <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
                 <Users className="h-3 w-3 mr-1" />
                 Shared
