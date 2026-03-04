@@ -308,9 +308,10 @@ export const RefactoredDashboard = () => {
     }
   };
 
-  // Calculate metrics
-  const totalCommitments = commitments.reduce((sum, c) => sum + (parseFloat(c.amount) || 0), 0);
-  const paidCommitments = commitments
+  // Calculate metrics - exclude imported commitments from active totals
+  const activeCommitments = commitments.filter(c => !c.isImported);
+  const totalCommitments = activeCommitments.reduce((sum, c) => sum + (parseFloat(c.amount) || 0), 0);
+  const paidCommitments = activeCommitments
     .filter(c => c.isPaid)
     .reduce((sum, c) => sum + (parseFloat(c.amountPaid || c.amount) || 0), 0);
   const availableBalance = monthlyIncome - paidCommitments;
@@ -389,7 +390,7 @@ export const RefactoredDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Commitments</p>
-                  <p className="text-xl sm:text-2xl font-bold">{commitments.length}</p>
+                  <p className="text-xl sm:text-2xl font-bold">{activeCommitments.length}</p>
                 </div>
                 <div className="p-2 sm:p-3 bg-primary/10 rounded-full">
                   <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
@@ -467,6 +468,7 @@ export const RefactoredDashboard = () => {
           commitments={commitments}
           currency="MYR"
           onMarkPaid={handleMarkPaid}
+          onMarkUnpaid={handleMarkUnpaid}
           onAddNew={() => setShowCommitmentForm(true)}
           onDelete={handleDeleteCommitment}
         />

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Check, Users, Clock, Trash2 } from 'lucide-react';
+import { Plus, Check, Undo2, Users, Clock, Trash2, FileText } from 'lucide-react';
 
 interface Commitment {
   id: string;
@@ -10,7 +10,9 @@ interface Commitment {
   type: 'static' | 'dynamic';
   category: string;
   isPaid: boolean;
+  amountPaid?: string;
   shared: boolean;
+  isImported?: boolean;
   sharedWith?: string[];
 }
 
@@ -18,6 +20,7 @@ interface CommitmentsListProps {
   commitments: Commitment[];
   currency?: string;
   onMarkPaid: (id: string, amount: number) => void;
+  onMarkUnpaid?: (id: string) => void;
   onAddNew: () => void;
   onDelete?: (id: string) => void;
 }
@@ -26,11 +29,15 @@ export const CommitmentsList = ({
   commitments,
   currency = 'MYR',
   onMarkPaid,
+  onMarkUnpaid,
   onAddNew,
   onDelete,
 }: CommitmentsListProps) => {
-  const unpaidCommitments = commitments.filter(c => !c.isPaid);
-  const paidCommitments = commitments.filter(c => c.isPaid);
+  // Exclude imported commitments from active totals
+  const activeCommitments = commitments.filter(c => !c.isImported);
+  const unpaidCommitments = activeCommitments.filter(c => !c.isPaid);
+  const paidCommitments = activeCommitments.filter(c => c.isPaid);
+  const importedCommitments = commitments.filter(c => c.isImported);
   const totalUnpaid = unpaidCommitments.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
 
   return (
@@ -81,6 +88,7 @@ export const CommitmentsList = ({
                     commitment={commitment}
                     currency={currency}
                     onMarkPaid={onMarkPaid}
+                    onMarkUnpaid={onMarkUnpaid}
                     onDelete={onDelete}
                   />
                 ))}
@@ -102,10 +110,34 @@ export const CommitmentsList = ({
                     commitment={commitment}
                     currency={currency}
                     onMarkPaid={onMarkPaid}
+                    onMarkUnpaid={onMarkUnpaid}
                     onDelete={onDelete}
                   />
                 ))}
               </div>
+            )}
+
+            {/* Imported Records (not counted in totals) */}
+            {importedCommitments.length > 0 && (
+              <>
+                <div className="border-t my-6"></div>
+                <div className="space-y-3">
+                  <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-purple-500" />
+                    Imported Records ({importedCommitments.length}) — not counted in totals
+                  </h3>
+                  {importedCommitments.map(commitment => (
+                    <CommitmentItem
+                      key={commitment.id}
+                      commitment={commitment}
+                      currency={currency}
+                      onMarkPaid={onMarkPaid}
+                      onMarkUnpaid={onMarkUnpaid}
+                      onDelete={onDelete}
+                    />
+                  ))}
+                </div>
+              </>
             )}
           </>
         )}
@@ -118,16 +150,19 @@ interface CommitmentItemProps {
   commitment: Commitment;
   currency: string;
   onMarkPaid: (id: string, amount: number) => void;
+  onMarkUnpaid?: (id: string) => void;
   onDelete?: (id: string) => void;
 }
 
-const CommitmentItem = ({ commitment, currency, onMarkPaid, onDelete }: CommitmentItemProps) => {
+const CommitmentItem = ({ commitment, currency, onMarkPaid, onMarkUnpaid, onDelete }: CommitmentItemProps) => {
   return (
     <div
       className={`flex flex-col gap-3 p-4 rounded-lg border transition-smooth animate-fade-in ${
         commitment.isPaid
           ? 'bg-muted/30 border-muted opacity-75'
-          : 'bg-background border-border hover:shadow-sm hover:border-primary/20'
+          : commitment.isImported
+            ? 'bg-purple-50/30 border-purple-100'
+            : 'bg-background border-border hover:shadow-sm hover:border-primary/20'
       }`}
     >
       {/* Header Row: Title, Amount, Menu */}
@@ -145,6 +180,12 @@ const CommitmentItem = ({ commitment, currency, onMarkPaid, onDelete }: Commitme
               <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
                 <Users className="h-3 w-3 mr-1" />
                 Shared
+              </Badge>
+            )}
+            {commitment.isImported && (
+              <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700">
+                <FileText className="h-3 w-3 mr-1" />
+                Imported
               </Badge>
             )}
           </div>
@@ -167,16 +208,28 @@ const CommitmentItem = ({ commitment, currency, onMarkPaid, onDelete }: Commitme
 
       {/* Action Buttons Row */}
       <div className="flex items-center gap-2 pt-2">
-        <Button
-          variant={commitment.isPaid ? 'secondary' : 'success'}
-          size="sm"
-          onClick={() => onMarkPaid(commitment.id, commitment.amount)}
-          disabled={commitment.isPaid}
-          className="flex-1"
-        >
-          <Check className="h-4 w-4 mr-1" />
-          <span>{commitment.isPaid ? 'Paid' : 'Mark Paid'}</span>
-        </Button>
+        {commitment.isPaid ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => onMarkUnpaid && onMarkUnpaid(commitment.id)}
+            disabled={!onMarkUnpaid}
+            className="flex-1"
+          >
+            <Undo2 className="h-4 w-4 mr-1" />
+            <span>Mark Unpaid</span>
+          </Button>
+        ) : (
+          <Button
+            variant="success"
+            size="sm"
+            onClick={() => onMarkPaid(commitment.id, commitment.amount)}
+            className="flex-1"
+          >
+            <Check className="h-4 w-4 mr-1" />
+            <span>Mark Paid</span>
+          </Button>
+        )}
 
         {onDelete && (
           <Button
