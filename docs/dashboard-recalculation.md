@@ -88,5 +88,6 @@ The `/api/dashboard/:userId/:month` endpoint provides a pre-calculated summary. 
 
 - **Month navigation**: Changing the month re-fetches commitments and income for the new month. Payment status is per-month (`CommitmentPayment` records are scoped by `month`).
 - **Recurring commitments**: Displayed every month but paid status is tracked per month independently.
+- **Non-recurring commitments**: Only appear in their start month (based on `startDate` or `createdAt`). They do not appear in subsequent months.
 - **No income set**: Income defaults to `0` when no `MonthlyIncome` record exists for the selected month.
 - **Negative balance**: When `totalCommitments > income`, the balance card shows a "Over Budget" indicator.

@@ -42,9 +42,9 @@ class CommitmentService {
           },
           select: { groupId: true },
         });
-        
+
         const groupIds = memberships.map(m => m.groupId);
-        
+
         if (groupIds.length > 0) {
           whereClause.OR.push({
             groupId: { in: groupIds },
@@ -81,8 +81,36 @@ class CommitmentService {
 
       console.log('Commitments fetched:', commitments.length);
 
+      // Filter commitments based on recurring flag and month
+      const filteredCommitments = commitments.filter((commitment: any) => {
+        // Recurring commitments appear in all months
+        if (commitment.recurring) {
+          return true;
+        }
+
+        // Non-recurring commitments only appear from their start month onward
+        const requestedMonth = month; // Format: "YYYY-MM"
+
+        // Determine the commitment's start month
+        let commitmentStartMonth: string;
+        if (commitment.startDate) {
+          // Use startDate if available
+          const startDate = new Date(commitment.startDate);
+          commitmentStartMonth = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
+        } else {
+          // Fall back to createdAt
+          const createdAt = new Date(commitment.createdAt);
+          commitmentStartMonth = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        // Only show non-recurring commitment in its start month
+        return requestedMonth === commitmentStartMonth;
+      });
+
+      console.log('Filtered commitments for month:', filteredCommitments.length);
+
       // Map commitments with payment status
-      const commitmentsWithPayments = commitments.map((commitment: any) => {
+      const commitmentsWithPayments = filteredCommitments.map((commitment: any) => {
         const payment = commitment.payments?.find((p: any) => p.month === month);
         return {
           ...commitment,
@@ -147,7 +175,7 @@ class CommitmentService {
       await prisma.commitmentPayment.deleteMany({
         where: { commitmentId: id },
       });
-      
+
       // Then delete the commitment
       await prisma.commitment.delete({
         where: { id: id },
@@ -190,7 +218,7 @@ class CommitmentService {
   async importCommitments(userId: number, commitments: any[]): Promise<Commitment[]> {
     try {
       const importedCommitments = await Promise.all(
-        commitments.map(async (commitment) => {
+        commitments.map(async commitment => {
           return await prisma.commitment.create({
             data: {
               userId: String(userId),
