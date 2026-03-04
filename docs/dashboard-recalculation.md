@@ -33,8 +33,7 @@ All totals are derived **client-side** from the fetched commitments list. Import
 // Exclude imported records from active totals
 const activeCommitments = commitments.filter(c => !c.isImported);
 
-const totalCommitments = activeCommitments
-  .reduce((sum, c) => sum + parseFloat(c.amount), 0);
+const totalCommitments = activeCommitments.reduce((sum, c) => sum + parseFloat(c.amount), 0);
 
 const paidCommitments = activeCommitments
   .filter(c => c.isPaid)
@@ -46,6 +45,7 @@ const availableBalance = monthlyIncome - paidCommitments;
 ### Balance Card
 
 The `BalanceCard` component receives `totalCommitments` (active only) and `monthlyIncome`, displaying:
+
 - **Monthly Balance** = `income − totalCommitments`
 - **Paid This Month** = sum of `amountPaid` for all paid active commitments
 - **Total Commitments** = count of active (non-imported) commitments
@@ -54,14 +54,14 @@ The `BalanceCard` component receives `totalCommitments` (active only) and `month
 
 Dashboard totals are recalculated after every commitment mutation:
 
-| Operation | Trigger | Notes |
-|---|---|---|
-| Create commitment | `loadDashboardData()` after POST `/api/commitments` | New commitment appears immediately |
-| Edit commitment | `loadDashboardData()` after PUT `/api/commitments/:id` | Amount/category change reflected at once |
-| Delete commitment | `loadDashboardData()` after DELETE `/api/commitments/:id` | Permanent delete or month-only delete |
-| Mark as paid | `loadDashboardData()` after POST `/api/commitments/:id/pay` | Moves commitment to "paid" bucket |
-| Mark as unpaid | `loadDashboardData()` after DELETE `/api/commitments/:id/pay/:month` | Restores commitment to "pending" bucket |
-| Import commitments | `loadDashboardData()` after POST `/api/commitments/import` | Imported items visible but excluded from totals |
+| Operation          | Trigger                                                              | Notes                                           |
+| ------------------ | -------------------------------------------------------------------- | ----------------------------------------------- |
+| Create commitment  | `loadDashboardData()` after POST `/api/commitments`                  | New commitment appears immediately              |
+| Edit commitment    | `loadDashboardData()` after PUT `/api/commitments/:id`               | Amount/category change reflected at once        |
+| Delete commitment  | `loadDashboardData()` after DELETE `/api/commitments/:id`            | Permanent delete or month-only delete           |
+| Mark as paid       | `loadDashboardData()` after POST `/api/commitments/:id/pay`          | Moves commitment to "paid" bucket               |
+| Mark as unpaid     | `loadDashboardData()` after DELETE `/api/commitments/:id/pay/:month` | Restores commitment to "pending" bucket         |
+| Import commitments | `loadDashboardData()` after POST `/api/commitments/import`           | Imported items visible but excluded from totals |
 
 ## Imported Records
 
@@ -87,7 +87,8 @@ The `/api/dashboard/:userId/:month` endpoint provides a pre-calculated summary. 
 ## Edge Cases
 
 - **Month navigation**: Changing the month re-fetches commitments and income for the new month. Payment status is per-month (`CommitmentPayment` records are scoped by `month`).
-- **Recurring commitments**: Displayed every month but paid status is tracked per month independently.
-- **Non-recurring commitments**: Only appear in their start month (based on `startDate` or `createdAt`). They do not appear in subsequent months.
+- **Recurring commitments**: Appear from their start month onward (future months only). They do NOT appear in months before creation. Payment status is tracked per month independently.
+- **Non-recurring commitments**: Only appear in their exact start month (based on `startDate` or `createdAt`). They do not appear in past or future months.
+- **Past months**: Commitments never appear in months before their `startDate` or `createdAt`, regardless of recurring status.
 - **No income set**: Income defaults to `0` when no `MonthlyIncome` record exists for the selected month.
 - **Negative balance**: When `totalCommitments > income`, the balance card shows a "Over Budget" indicator.

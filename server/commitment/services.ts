@@ -83,12 +83,6 @@ class CommitmentService {
 
       // Filter commitments based on recurring flag and month
       const filteredCommitments = commitments.filter((commitment: any) => {
-        // Recurring commitments appear in all months
-        if (commitment.recurring) {
-          return true;
-        }
-
-        // Non-recurring commitments only appear from their start month onward
         const requestedMonth = month; // Format: "YYYY-MM"
 
         // Determine the commitment's start month
@@ -103,7 +97,17 @@ class CommitmentService {
           commitmentStartMonth = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, '0')}`;
         }
 
-        // Only show non-recurring commitment in its start month
+        // Commitments should never appear in months before they were created
+        if (requestedMonth < commitmentStartMonth) {
+          return false;
+        }
+
+        // Recurring commitments appear from start month onward (all future months)
+        if (commitment.recurring) {
+          return requestedMonth >= commitmentStartMonth;
+        }
+
+        // Non-recurring commitments only appear in their exact start month
         return requestedMonth === commitmentStartMonth;
       });
 
