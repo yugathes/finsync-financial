@@ -42,9 +42,9 @@ class CommitmentService {
           },
           select: { groupId: true },
         });
-        
+
         const groupIds = memberships.map(m => m.groupId);
-        
+
         if (groupIds.length > 0) {
           whereClause.OR.push({
             groupId: { in: groupIds },
@@ -81,8 +81,40 @@ class CommitmentService {
 
       console.log('Commitments fetched:', commitments.length);
 
+      // Filter commitments based on recurring flag and month
+      const filteredCommitments = commitments.filter((commitment: any) => {
+        const requestedMonth = month; // Format: "YYYY-MM"
+
+        // Determine the commitment's start month
+        let commitmentStartMonth: string;
+        if (commitment.startDate) {
+          // Use startDate if available
+          const startDate = new Date(commitment.startDate);
+          commitmentStartMonth = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
+        } else {
+          // Fall back to createdAt
+          const createdAt = new Date(commitment.createdAt);
+          commitmentStartMonth = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        // Commitments should never appear in months before they were created
+        if (requestedMonth < commitmentStartMonth) {
+          return false;
+        }
+
+        // Recurring commitments appear from start month onward (all future months)
+        if (commitment.recurring) {
+          return requestedMonth >= commitmentStartMonth;
+        }
+
+        // Non-recurring commitments only appear in their exact start month
+        return requestedMonth === commitmentStartMonth;
+      });
+
+      console.log('Filtered commitments for month:', filteredCommitments.length);
+
       // Map commitments with payment status
-      const commitmentsWithPayments = commitments.map((commitment: any) => {
+      const commitmentsWithPayments = filteredCommitments.map((commitment: any) => {
         const payment = commitment.payments?.find((p: any) => p.month === month);
         return {
           ...commitment,
@@ -147,7 +179,7 @@ class CommitmentService {
       await prisma.commitmentPayment.deleteMany({
         where: { commitmentId: id },
       });
-      
+
       // Then delete the commitment
       await prisma.commitment.delete({
         where: { id: id },
@@ -187,32 +219,33 @@ class CommitmentService {
     }
   }
 
-  async importCommitments(userId: number, commitments: any[]): Promise<Commitment[]> {
-    try {
-      const importedCommitments = await Promise.all(
-        commitments.map(async (commitment) => {
-          return await prisma.commitment.create({
-            data: {
-              userId: String(userId),
-              type: commitment.type || 'static',
-              title: commitment.title,
-              category: commitment.category,
-              amount: commitment.amount,
-              recurring: commitment.recurring ?? false,
-              shared: false,
-              isImported: true,
-              importedAt: new Date(),
-              startDate: commitment.startDate ? new Date(commitment.startDate) : new Date(),
-              createdAt: commitment.createdAt ? new Date(commitment.createdAt) : new Date(),
-            },
-          });
-        })
-      );
-      return importedCommitments;
-    } catch (error) {
-      console.error('Error importing commitments:', error);
-      throw error;
-    }
-  }
+  // COMMENTED OUT: Import functionality disabled
+  // async importCommitments(userId: number, commitments: any[]): Promise<Commitment[]> {
+  //   try {
+  //     const importedCommitments = await Promise.all(
+  //       commitments.map(async commitment => {
+  //         return await prisma.commitment.create({
+  //           data: {
+  //             userId: String(userId),
+  //             type: commitment.type || 'static',
+  //             title: commitment.title,
+  //             category: commitment.category,
+  //             amount: commitment.amount,
+  //             recurring: commitment.recurring ?? false,
+  //             shared: false,
+  //             isImported: true,
+  //             importedAt: new Date(),
+  //             startDate: commitment.startDate ? new Date(commitment.startDate) : new Date(),
+  //             createdAt: commitment.createdAt ? new Date(commitment.createdAt) : new Date(),
+  //           },
+  //         });
+  //       })
+  //     );
+  //     return importedCommitments;
+  //   } catch (error) {
+  //     console.error('Error importing commitments:', error);
+  //     throw error;
+  //   }
+  // }
 }
 export default new CommitmentService();

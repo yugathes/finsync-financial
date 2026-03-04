@@ -18,7 +18,7 @@ export async function getCommitmentsForMonth(req: Request, res: Response) {
     const includeShared = req.query.includeShared === 'true';
     const includeImported = req.query.includeImported === 'true';
     const includePersonal = req.query.includePersonal !== 'false';
-    
+
     console.log('Fetching commitments for user:', userId, 'month:', month);
     const commitments = await CommitmentService.getCommitmentsForMonth(userId, month, {
       includeShared,
@@ -70,7 +70,7 @@ export async function deleteCommitment(req: Request, res: Response) {
     const id = req.params.id;
     const deleteScope = req.query.scope as 'single' | 'all' | undefined;
     const month = req.query.month as string | undefined;
-    
+
     if (deleteScope === 'single' && month) {
       // Delete only for specific month (delete payment record)
       await CommitmentService.deleteCommitmentForMonth(id, month);
@@ -85,22 +85,23 @@ export async function deleteCommitment(req: Request, res: Response) {
   }
 }
 
-export async function importCommitments(req: Request, res: Response) {
-  try {
-    const { userId, commitments } = req.body;
-    
-    if (!userId || !commitments || !Array.isArray(commitments)) {
-      return res.status(400).json({ error: 'Missing required fields: userId and commitments array' });
-    }
+// COMMENTED OUT: Import functionality disabled
+// export async function importCommitments(req: Request, res: Response) {
+//   try {
+//     const { userId, commitments } = req.body;
+//
+//     if (!userId || !commitments || !Array.isArray(commitments)) {
+//       return res.status(400).json({ error: 'Missing required fields: userId and commitments array' });
+//     }
 
-    const importedCommitments = await CommitmentService.importCommitments(userId, commitments);
-    res.json({
-      success: true,
-      count: importedCommitments.length,
-      commitments: importedCommitments,
-    });
-  } catch (error: any) {
-    console.error('Error importing commitments:', error);
-    res.status(400).json({ error: 'Failed to import commitments', details: error.message });
-  }
-}
+//     const importedCommitments = await CommitmentService.importCommitments(userId, commitments);
+//     res.json({
+//       success: true,
+//       count: importedCommitments.length,
+//       commitments: importedCommitments,
+//     });
+//   } catch (error: any) {
+//     console.error('Error importing commitments:', error);
+//     res.status(400).json({ error: 'Failed to import commitments', details: error.message });
+//   }
+// }
