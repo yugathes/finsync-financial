@@ -219,32 +219,33 @@ class CommitmentService {
     }
   }
 
-  async importCommitments(userId: number, commitments: any[]): Promise<Commitment[]> {
-    try {
-      const importedCommitments = await Promise.all(
-        commitments.map(async commitment => {
-          return await prisma.commitment.create({
-            data: {
-              userId: String(userId),
-              type: commitment.type || 'static',
-              title: commitment.title,
-              category: commitment.category,
-              amount: commitment.amount,
-              recurring: commitment.recurring ?? false,
-              shared: false,
-              isImported: true,
-              importedAt: new Date(),
-              startDate: commitment.startDate ? new Date(commitment.startDate) : new Date(),
-              createdAt: commitment.createdAt ? new Date(commitment.createdAt) : new Date(),
-            },
-          });
-        })
-      );
-      return importedCommitments;
-    } catch (error) {
-      console.error('Error importing commitments:', error);
-      throw error;
-    }
-  }
+  // COMMENTED OUT: Import functionality disabled
+  // async importCommitments(userId: number, commitments: any[]): Promise<Commitment[]> {
+  //   try {
+  //     const importedCommitments = await Promise.all(
+  //       commitments.map(async commitment => {
+  //         return await prisma.commitment.create({
+  //           data: {
+  //             userId: String(userId),
+  //             type: commitment.type || 'static',
+  //             title: commitment.title,
+  //             category: commitment.category,
+  //             amount: commitment.amount,
+  //             recurring: commitment.recurring ?? false,
+  //             shared: false,
+  //             isImported: true,
+  //             importedAt: new Date(),
+  //             startDate: commitment.startDate ? new Date(commitment.startDate) : new Date(),
+  //             createdAt: commitment.createdAt ? new Date(commitment.createdAt) : new Date(),
+  //           },
+  //         });
+  //       })
+  //     );
+  //     return importedCommitments;
+  //   } catch (error) {
+  //     console.error('Error importing commitments:', error);
+  //     throw error;
+  //   }
+  // }
 }
 export default new CommitmentService();

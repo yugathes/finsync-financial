@@ -46,14 +46,16 @@ export const RefactoredDashboard = () => {
   const [commitments, setCommitments] = useState<any[]>([]);
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [showCommitmentForm, setShowCommitmentForm] = useState(false);
-  const [showImportWizard, setShowImportWizard] = useState(false);
+  // COMMENTED OUT: Import functionality disabled
+  // const [showImportWizard, setShowImportWizard] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [commitmentToDelete, setCommitmentToDelete] = useState<CommitmentWithStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   // Filter state
   const [includeShared, setIncludeShared] = useState(false);
-  const [includeImported, setIncludeImported] = useState(false);
+  // COMMENTED OUT: Import functionality disabled
+  // const [includeImported, setIncludeImported] = useState(false);
 
   // Helper functions
   const getCurrentMonth = () => new Date().toISOString().slice(0, 7);
@@ -81,20 +83,19 @@ export const RefactoredDashboard = () => {
     if (!user?.id) return;
     try {
       setLoading(true);
-      
+
       console.log(`[RefactoredDashboard] Loading dashboard data for user ${user.id} and month ${currentMonth}`);
-      
+
       // Build query parameters for filters
       const params = new URLSearchParams({
         includeShared: includeShared.toString(),
-        includeImported: includeImported.toString(),
+        // COMMENTED OUT: Import functionality disabled
+        // includeImported: includeImported.toString(),
       });
-      
+
       // Load commitments with filters
-      const commitmentsData = await apiRequest(
-        `/api/commitments/user/${user.id}/month/${currentMonth}?${params}`
-      );
-      
+      const commitmentsData = await apiRequest(`/api/commitments/user/${user.id}/month/${currentMonth}?${params}`);
+
       // Load income - handle 404 gracefully (no income set for this month)
       let incomeAmount = 0;
       try {
@@ -110,12 +111,12 @@ export const RefactoredDashboard = () => {
           throw error;
         }
       }
-      
+
       console.log(`[RefactoredDashboard] Dashboard data loaded successfully for ${currentMonth}:`, {
         income: incomeAmount,
-        commitmentsCount: commitmentsData?.length || 0
+        commitmentsCount: commitmentsData?.length || 0,
       });
-      
+
       setMonthlyIncome(incomeAmount);
       setCommitments(commitmentsData || []);
     } catch (error: any) {
@@ -128,7 +129,7 @@ export const RefactoredDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, currentMonth, includeShared, includeImported, toast]);
+  }, [user?.id, currentMonth, includeShared, toast]);
 
   // Load data when user or month changes
   useEffect(() => {
@@ -250,7 +251,7 @@ export const RefactoredDashboard = () => {
 
   const handleConfirmDelete = async (deleteScope: 'single' | 'all') => {
     if (!commitmentToDelete) return;
-    
+
     try {
       const params = new URLSearchParams();
       if (deleteScope === 'single' && commitmentToDelete.recurring) {
@@ -259,20 +260,18 @@ export const RefactoredDashboard = () => {
       } else {
         params.append('scope', 'all');
       }
-      
+
       await apiRequest(`/api/commitments/${commitmentToDelete.id}?${params}`, {
         method: 'DELETE',
       });
-      
+
       await loadDashboardData();
       setShowDeleteModal(false);
       setCommitmentToDelete(null);
-      
+
       toast({
         title: 'Commitment deleted!',
-        description: deleteScope === 'single' 
-          ? 'Commitment removed for this month'
-          : 'Commitment deleted permanently',
+        description: deleteScope === 'single' ? 'Commitment removed for this month' : 'Commitment deleted permanently',
       });
     } catch (error: any) {
       toast({
@@ -288,25 +287,26 @@ export const RefactoredDashboard = () => {
     setCommitmentToDelete(null);
   };
 
-  const handleImportCommitments = async (importedCommitments: any[]) => {
-    if (!user?.id) return;
-    try {
-      await apiRequest('/api/commitments/import', {
-        method: 'POST',
-        body: JSON.stringify({
-          userId: user.id,
-          commitments: importedCommitments,
-        }),
-      });
-      await loadDashboardData();
-      toast({
-        title: "Import Successful",
-        description: `${importedCommitments.length} commitment(s) imported`,
-      });
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to import commitments');
-    }
-  };
+  // COMMENTED OUT: Import functionality disabled
+  // const handleImportCommitments = async (importedCommitments: any[]) => {
+  //   if (!user?.id) return;
+  //   try {
+  //     await apiRequest('/api/commitments/import', {
+  //       method: 'POST',
+  //       body: JSON.stringify({
+  //         userId: user.id,
+  //         commitments: importedCommitments,
+  //       }),
+  //     });
+  //     await loadDashboardData();
+  //     toast({
+  //       title: "Import Successful",
+  //       description: `${importedCommitments.length} commitment(s) imported`,
+  //     });
+  //   } catch (error: any) {
+  //     throw new Error(error.message || 'Failed to import commitments');
+  //   }
+  // };
 
   // Calculate metrics - exclude imported commitments from active totals
   const activeCommitments = commitments.filter(c => !c.isImported);
@@ -429,36 +429,30 @@ export const RefactoredDashboard = () => {
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
               <div className="flex flex-col gap-3">
                 <div className="flex items-center space-x-2">
-                  <Switch
-                    id="shared-filter"
-                    checked={includeShared}
-                    onCheckedChange={setIncludeShared}
-                  />
+                  <Switch id="shared-filter" checked={includeShared} onCheckedChange={setIncludeShared} />
                   <Label htmlFor="shared-filter" className="flex items-center gap-2 cursor-pointer">
                     <Users className="h-4 w-4 text-blue-600" />
                     Show Shared Commitments
                   </Label>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="imported-filter"
-                    checked={includeImported}
-                    onCheckedChange={setIncludeImported}
-                  />
+                {/* COMMENTED OUT: Import functionality disabled */}
+                {/* <div className="flex items-center space-x-2">
+                  <Switch id="imported-filter" checked={includeImported} onCheckedChange={setIncludeImported} />
                   <Label htmlFor="imported-filter" className="flex items-center gap-2 cursor-pointer">
                     <FileText className="h-4 w-4 text-purple-600" />
                     Show Imported Records
                   </Label>
-                </div>
+                </div> */}
               </div>
-              <Button
+              {/* COMMENTED OUT: Import functionality disabled */}
+              {/* <Button
                 onClick={() => setShowImportWizard(true)}
                 variant="outline"
                 className="flex items-center gap-2"
               >
                 <Upload className="h-4 w-4" />
                 Import Commitments
-              </Button>
+              </Button> */}
             </div>
           </CardContent>
         </Card>
@@ -491,11 +485,12 @@ export const RefactoredDashboard = () => {
           onCancel={() => setShowIncomeModal(false)}
         />
 
-        <ImportWizardModal
+        {/* COMMENTED OUT: Import functionality disabled */}
+        {/* <ImportWizardModal
           isOpen={showImportWizard}
           onClose={() => setShowImportWizard(false)}
           onImport={handleImportCommitments}
-        />
+        /> */}
 
         <DeleteConfirmationModal
           isOpen={showDeleteModal}
