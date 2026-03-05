@@ -66,6 +66,13 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finsync_test
 
+      - name: Seed test account
+        run: npm run db:seed
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finsync_test
+          TEST_USER_EMAIL: testuser@yugathes.online
+          TEST_USER_PASSWORD: testpassword
+
       - name: Start application server
         run: yarn run dev &
         env:
