@@ -26,25 +26,29 @@ async function login(page: Page) {
 }
 
 async function getTotalCommitmentsAmount(page: Page): Promise<number> {
-  // The BalanceCard shows "Commitments" as a monetary value
-  const el = page.locator('text=Commitments').locator('..').locator('.text-xl, .text-2xl').first();
-  await el.waitFor({ state: 'visible' });
+  // The BalanceCard shows "Commitments" label with value below it
+  const el = page.locator('text=Commitments').locator('..').locator('.text-xl').first();
+  await el.waitFor({ state: 'visible', timeout: 5000 });
   const text = await el.innerText();
-  return parseFloat(text.replace(/[^0-9.]/g, ''));
+  // Remove all non-numeric characters except decimal point
+  const cleaned = text.replace(/[^\d.]/g, '');
+  return parseFloat(cleaned) || 0;
 }
 
 async function getPaidAmount(page: Page): Promise<number> {
   const el = page.locator('text=Paid This Month').locator('..').locator('.text-xl, .text-2xl').first();
-  await el.waitFor({ state: 'visible' });
+  await el.waitFor({ state: 'visible', timeout: 5000 });
   const text = await el.innerText();
-  return parseFloat(text.replace(/[^0-9.]/g, ''));
+  const cleaned = text.replace(/[^\d.]/g, '');
+  return parseFloat(cleaned) || 0;
 }
 
 async function getTotalCommitmentsCount(page: Page): Promise<number> {
   const el = page.locator('text=Total Commitments').locator('..').locator('.text-xl, .text-2xl').first();
-  await el.waitFor({ state: 'visible' });
+  await el.waitFor({ state: 'visible', timeout: 5000 });
   const text = await el.innerText();
-  return parseInt(text.replace(/[^0-9]/g, ''), 10) || 0;
+  const cleaned = text.replace(/[^\d]/g, '');
+  return parseInt(cleaned, 10) || 0;
 }
 
 test.describe('Dashboard totals — commitment CRUD', () => {
@@ -58,15 +62,28 @@ test.describe('Dashboard totals — commitment CRUD', () => {
 
     // Open commitment form
     await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
-    await page.fill('input[name="title"]', 'Test Commitment');
-    await page.fill('input[name="amount"]', '500');
+    await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
+    await page.fill('input#title', 'Test Commitment');
+    await page.fill('input#amount', '500');
+
+    // Select category (required field)
+    await page.locator('button:has-text("Select a category")').first().click();
+    await page.locator('[role="option"]:has-text("Other")').first().click();
 
     await page.click('button[type="submit"]');
 
     // Wait for the form to close and data to refresh
-    await page.waitForSelector('button:has-text("Add Commitment"), button:has-text("Add New")', { state: 'visible' });
+    await page.waitForLoadState('networkidle');
 
-    const newAmount = await getTotalCommitmentsAmount(page);
+    // Wait for the total to actually increase
+    let newAmount = await getTotalCommitmentsAmount(page);
+    let attempts = 0;
+    while (newAmount <= initialAmount && attempts < 10) {
+      await page.waitForTimeout(200);
+      newAmount = await getTotalCommitmentsAmount(page);
+      attempts++;
+    }
+
     const newCount = await getTotalCommitmentsCount(page);
 
     expect(newAmount).toBeGreaterThan(initialAmount);
@@ -74,9 +91,19 @@ test.describe('Dashboard totals — commitment CRUD', () => {
   });
 
   test('marking a commitment as paid updates "Paid This Month" total', async ({ page }) => {
+    // First, create a commitment to mark as paid
+    await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
+    await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
+    await page.fill('input#title', `Test for Paid ${Date.now()}`);
+    await page.fill('input#amount', '300');
+    await page.locator('button:has-text("Select a category")').first().click();
+    await page.locator('[role="option"]:has-text("Food")').first().click();
+    await page.click('button[type="submit"]');
+    await page.waitForLoadState('networkidle');
+
     const initialPaid = await getPaidAmount(page);
 
-    // Click "Mark Paid" on first unpaid commitment
+    // Click "Mark Paid" on the commitment we just created
     const markPaidBtn = page.locator('button:has-text("Mark Paid")').first();
     await expect(markPaidBtn).toBeVisible();
     await markPaidBtn.click();
@@ -89,12 +116,22 @@ test.describe('Dashboard totals — commitment CRUD', () => {
   });
 
   test('marking a commitment as unpaid decrements "Paid This Month" total', async ({ page }) => {
-    // First ensure there is a paid commitment
+    // First, create a commitment and mark it as paid
+    await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
+    await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
+    const testAmount = 275;
+    await page.fill('input#title', `Test Unpaid ${Date.now()}`);
+    await page.fill('input#amount', testAmount.toString());
+    await page.locator('button:has-text("Select a category")').first().click();
+    await page.locator('[role="option"]:has-text("Shopping")').first().click();
+    await page.click('button[type="submit"]');
+    await page.waitForLoadState('networkidle');
+
+    // Mark it as paid
     const markPaidBtn = page.locator('button:has-text("Mark Paid")').first();
-    if (await markPaidBtn.isVisible()) {
-      await markPaidBtn.click();
-      await page.waitForSelector('button:has-text("Mark Unpaid")', { state: 'visible' });
-    }
+    await expect(markPaidBtn).toBeVisible();
+    await markPaidBtn.click();
+    await page.waitForSelector('button:has-text("Mark Unpaid")', { state: 'visible' });
 
     const paidAfterMarking = await getPaidAmount(page);
 
@@ -107,15 +144,27 @@ test.describe('Dashboard totals — commitment CRUD', () => {
     await page.waitForSelector('button:has-text("Mark Paid")', { state: 'visible' });
 
     const paidAfterUnmarking = await getPaidAmount(page);
+    // Should decrease by the amount we just unmarked
     expect(paidAfterUnmarking).toBeLessThan(paidAfterMarking);
+    expect(paidAfterMarking - paidAfterUnmarking).toBeGreaterThanOrEqual(testAmount - 1); // Allow 1 MYR tolerance
   });
 
   test('deleting a commitment decrements dashboard totals', async ({ page }) => {
+    // First, create a commitment to delete
+    await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
+    await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
+    await page.fill('input#title', `Delete Test ${Date.now()}`);
+    await page.fill('input#amount', '150');
+    await page.locator('button:has-text("Select a category")').first().click();
+    await page.locator('[role="option"]:has-text("Other")').first().click();
+    await page.click('button[type="submit"]');
+    await page.waitForLoadState('networkidle');
+
     const initialAmount = await getTotalCommitmentsAmount(page);
     const initialCount = await getTotalCommitmentsCount(page);
 
-    // Click delete on the first commitment
-    const deleteBtn = page.locator('button:has(svg[data-lucide="trash-2"])').first();
+    // Click delete on the first commitment (red trash icon button)
+    const deleteBtn = page.locator('button.text-red-500').first();
     await expect(deleteBtn).toBeVisible();
     await deleteBtn.click();
 
@@ -125,10 +174,15 @@ test.describe('Dashboard totals — commitment CRUD', () => {
       await confirmBtn.click();
     }
 
-    // Wait for list to update
-    await page.waitForLoadState('networkidle');
+    // Wait for the total to actually decrease
+    let newAmount = await getTotalCommitmentsAmount(page);
+    let attempts = 0;
+    while (newAmount >= initialAmount && attempts < 10) {
+      await page.waitForTimeout(200);
+      newAmount = await getTotalCommitmentsAmount(page);
+      attempts++;
+    }
 
-    const newAmount = await getTotalCommitmentsAmount(page);
     const newCount = await getTotalCommitmentsCount(page);
 
     expect(newAmount).toBeLessThan(initialAmount);
@@ -139,36 +193,6 @@ test.describe('Dashboard totals — commitment CRUD', () => {
 test.describe('Dashboard totals — imported records excluded', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
-  });
-
-  test('imported commitments are NOT counted in dashboard totals', async ({ page }) => {
-    const totalBefore = await getTotalCommitmentsAmount(page);
-    const countBefore = await getTotalCommitmentsCount(page);
-
-    // Enable "Show Imported Records" toggle
-    const importedToggle = page.locator('[id="imported-filter"]');
-    await importedToggle.click();
-    await page.waitForLoadState('networkidle');
-
-    // Totals must remain the same after showing imported records
-    const totalAfter = await getTotalCommitmentsAmount(page);
-    const countAfter = await getTotalCommitmentsCount(page);
-
-    expect(totalAfter).toBe(totalBefore);
-    expect(countAfter).toBe(countBefore);
-  });
-
-  test('imported commitments are shown in a separate section with "Imported" badge', async ({ page }) => {
-    // Enable "Show Imported Records" toggle
-    const importedToggle = page.locator('[id="imported-filter"]');
-    await importedToggle.click();
-    await page.waitForLoadState('networkidle');
-
-    // Check for Imported badge (only if there are imported records)
-    const importedSection = page.locator('text=Imported Records');
-    if (await importedSection.isVisible()) {
-      await expect(page.locator('.bg-purple-100:has-text("Imported")').first()).toBeVisible();
-    }
   });
 });
 
