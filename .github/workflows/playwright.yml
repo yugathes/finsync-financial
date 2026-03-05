@@ -46,13 +46,28 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      - name: Create auth.uid shim for CI Postgres
+        run: |
+          cat <<'SQL' | npx prisma db execute --stdin --schema prisma/schema.prisma
+          CREATE SCHEMA IF NOT EXISTS auth;
+          CREATE OR REPLACE FUNCTION auth.uid()
+          RETURNS uuid
+          LANGUAGE sql
+          STABLE
+          AS $$
+            SELECT NULL::uuid;
+          $$;
+          SQL
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finsync_test
+
       - name: Setup database
         run: npx prisma migrate deploy
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finsync_test
 
       - name: Start application server
-        run: npm run dev &
+        run: yarn run dev &
         env:
           NODE_ENV: development
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finsync_test
