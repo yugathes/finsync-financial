@@ -66,6 +66,12 @@ async function submitCommitmentForm(page: Page) {
   });
 }
 
+async function toggleRecurringSwitch(page: Page) {
+  // Click the "Recurring Monthly" switch by its ID
+  const recurringSwitch = page.locator('button[role="switch"]#recurring');
+  await recurringSwitch.click();
+}
+
 test.describe('Commitment CRUD operations', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
@@ -189,6 +195,135 @@ test.describe('Dashboard recalculates correctly after each operation', () => {
 
       const paidAfter = await getPaidAmount();
       expect(paidAfter).toBeGreaterThan(paidBefore);
+    }
+  });
+});
+
+test.describe('Month navigation with recurring vs non-recurring commitments', () => {
+  test.beforeEach(async ({ page }) => {
+    await login(page);
+  });
+
+  test('recurring commitment appears in future months', async ({ page }) => {
+    const recurringTitle = `Recurring Commitment ${Date.now()}`;
+
+    // Create a recurring commitment
+    await openCommitmentForm(page);
+    await fillCommitmentForm(page, {
+      title: recurringTitle,
+      amount: '500',
+      category: 'Housing',
+    });
+
+    // Toggle recurring switch
+    await toggleRecurringSwitch(page);
+
+    await submitCommitmentForm(page);
+
+    // Verify commitment appears in current month
+    await expect(page.locator(`span:has-text("${recurringTitle}").font-semibold`)).toBeVisible({ timeout: 5000 });
+
+    // Navigate to next month
+    const nextMonthBtn = page
+      .locator('button:has-text("Next"), button[aria-label*="Next"], button:has-text("→")')
+      .first();
+    if (await nextMonthBtn.isVisible()) {
+      await nextMonthBtn.click();
+      await page.waitForLoadState('networkidle');
+
+      // Recurring commitment should appear in next month
+      await expect(page.locator(`span:has-text("${recurringTitle}").font-semibold`)).toBeVisible({ timeout: 5000 });
+    }
+  });
+
+  test('non-recurring commitment does NOT appear in future months', async ({ page }) => {
+    const nonRecurringTitle = `Non-Recurring ${Date.now()}`;
+
+    // Create a non-recurring commitment
+    await openCommitmentForm(page);
+    await fillCommitmentForm(page, {
+      title: nonRecurringTitle,
+      amount: '300',
+      category: 'Entertainment',
+    });
+
+    // Do NOT toggle recurring (leave it off)
+    await submitCommitmentForm(page);
+
+    // Verify commitment appears in current month
+    await expect(page.locator(`span:has-text("${nonRecurringTitle}").font-semibold`)).toBeVisible({ timeout: 5000 });
+
+    // Navigate to next month
+    const nextMonthBtn = page
+      .locator('button:has-text("Next"), button[aria-label*="Next"], button:has-text("→")')
+      .first();
+    if (await nextMonthBtn.isVisible()) {
+      await nextMonthBtn.click();
+      await page.waitForLoadState('networkidle');
+
+      // Non-recurring commitment should NOT appear in next month
+      const commitmentInNextMonth = page.locator(`span:has-text("${nonRecurringTitle}").font-semibold`);
+      await expect(commitmentInNextMonth).not.toBeVisible({ timeout: 5000 });
+    }
+  });
+
+  test('non-recurring commitment does NOT appear in past months', async ({ page }) => {
+    const nonRecurringTitle = `Past Month Test ${Date.now()}`;
+
+    // Create a non-recurring commitment
+    await openCommitmentForm(page);
+    await fillCommitmentForm(page, {
+      title: nonRecurringTitle,
+      amount: '200',
+      category: 'Shopping',
+    });
+
+    // Do NOT toggle recurring
+    await submitCommitmentForm(page);
+
+    // Navigate to previous month
+    const prevMonthBtn = page
+      .locator('button:has-text("Previous"), button[aria-label*="Previous"], button:has-text("←")')
+      .first();
+    if (await prevMonthBtn.isVisible()) {
+      await prevMonthBtn.click();
+      await page.waitForLoadState('networkidle');
+
+      // Non-recurring commitment should NOT appear in previous month
+      const commitmentInPrevMonth = page.locator(`span:has-text("${nonRecurringTitle}").font-semibold`);
+      await expect(commitmentInPrevMonth).not.toBeVisible({ timeout: 5000 });
+    }
+  });
+
+  test('recurring commitment appears in past months', async ({ page }) => {
+    const recurringTitle = `Recurring Past ${Date.now()}`;
+
+    // Create a recurring commitment
+    await openCommitmentForm(page);
+    await fillCommitmentForm(page, {
+      title: recurringTitle,
+      amount: '400',
+      category: 'Utilities',
+    });
+
+    // Toggle recurring switch
+    await toggleRecurringSwitch(page);
+
+    await submitCommitmentForm(page);
+
+    // Verify commitment appears in current month
+    await expect(page.locator(`span:has-text("${recurringTitle}").font-semibold`)).toBeVisible({ timeout: 5000 });
+
+    // Navigate to previous month
+    const prevMonthBtn = page
+      .locator('button:has-text("Previous"), button[aria-label*="Previous"], button:has-text("←")')
+      .first();
+    if (await prevMonthBtn.isVisible()) {
+      await prevMonthBtn.click();
+      await page.waitForLoadState('networkidle');
+
+      // Recurring commitment should appear in previous month
+      await expect(page.locator(`span:has-text("${recurringTitle}").font-semibold`)).toBeVisible({ timeout: 5000 });
     }
   });
 });
