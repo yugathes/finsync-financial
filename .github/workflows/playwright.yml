@@ -46,6 +46,16 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      - name: Create .env.test for CI
+        run: |
+          cat > .env.test << 'EOF'
+          BASE_URL=http://localhost:5000
+          TEST_USER_EMAIL=testuser@yugathes.online
+          TEST_USER_PASSWORD=testpassword
+          VITE_REACT_APP_SUPABASE_URL=${{ secrets.VITE_REACT_APP_SUPABASE_URL }}
+          VITE_REACT_APP_SUPABASE_ANON_KEY=${{ secrets.VITE_REACT_APP_SUPABASE_ANON_KEY }}
+          EOF
+
       - name: Create auth.uid shim for CI Postgres
         run: |
           cat <<'SQL' | npx prisma db execute --stdin --schema prisma/schema.prisma
