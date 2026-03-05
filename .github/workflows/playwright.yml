@@ -92,8 +92,8 @@ jobs:
         run: npm run test:e2e
         env:
           BASE_URL: http://localhost:5000
-          TEST_USER_EMAIL: ${{ secrets.E2E_TEST_USER_EMAIL }}
-          TEST_USER_PASSWORD: ${{ secrets.E2E_TEST_USER_PASSWORD }}
+          TEST_USER_EMAIL: testuser@yugathes.online
+          TEST_USER_PASSWORD: testpassword
           CI: true
 
       - name: Upload Playwright report
