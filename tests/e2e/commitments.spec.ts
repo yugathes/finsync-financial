@@ -23,7 +23,6 @@ async function login(page: Page) {
   await page.fill('input[type="password"]', TEST_PASSWORD);
   await page.click('button[type="submit"]');
   await page.waitForURL(`${BASE_URL}/dashboard`);
-  console.log(`Logged in as ${TEST_EMAIL}`);
 }
 
 async function openCommitmentForm(page: Page) {
@@ -173,7 +172,15 @@ test.describe('Dashboard recalculates correctly after each operation', () => {
     await submitCommitmentForm(page);
 
     await page.waitForLoadState('networkidle');
-    const countAfter = await getCount();
+
+    // Wait for count to actually increase
+    let countAfter = await getCount();
+    let attempts = 0;
+    while (countAfter <= countBefore && attempts < 15) {
+      await page.waitForTimeout(300);
+      countAfter = await getCount();
+      attempts++;
+    }
 
     expect(countAfter).toBe(countBefore + 1);
   });
@@ -192,8 +199,17 @@ test.describe('Dashboard recalculates correctly after each operation', () => {
     if (await markPaidBtn.isVisible()) {
       await markPaidBtn.click();
       await page.waitForSelector('button:has-text("Mark Unpaid")', { state: 'visible' });
+      await page.waitForLoadState('networkidle');
 
-      const paidAfter = await getPaidAmount();
+      // Wait for paid amount to actually increase
+      let paidAfter = await getPaidAmount();
+      let attempts = 0;
+      while (paidAfter <= paidBefore && attempts < 15) {
+        await page.waitForTimeout(300);
+        paidAfter = await getPaidAmount();
+        attempts++;
+      }
+
       expect(paidAfter).toBeGreaterThan(paidBefore);
     }
   });

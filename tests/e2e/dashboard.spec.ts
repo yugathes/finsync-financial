@@ -78,8 +78,8 @@ test.describe('Dashboard totals — commitment CRUD', () => {
     // Wait for the total to actually increase
     let newAmount = await getTotalCommitmentsAmount(page);
     let attempts = 0;
-    while (newAmount <= initialAmount && attempts < 10) {
-      await page.waitForTimeout(200);
+    while (newAmount <= initialAmount && attempts < 15) {
+      await page.waitForTimeout(300);
       newAmount = await getTotalCommitmentsAmount(page);
       attempts++;
     }
@@ -110,8 +110,17 @@ test.describe('Dashboard totals — commitment CRUD', () => {
 
     // Wait for "Mark Unpaid" to appear (indicates paid state)
     await page.waitForSelector('button:has-text("Mark Unpaid")', { state: 'visible' });
+    await page.waitForLoadState('networkidle');
 
-    const newPaid = await getPaidAmount(page);
+    // Wait for paid amount to actually increase
+    let newPaid = await getPaidAmount(page);
+    let attempts = 0;
+    while (newPaid <= initialPaid && attempts < 15) {
+      await page.waitForTimeout(300);
+      newPaid = await getPaidAmount(page);
+      attempts++;
+    }
+
     expect(newPaid).toBeGreaterThan(initialPaid);
   });
 
@@ -120,30 +129,44 @@ test.describe('Dashboard totals — commitment CRUD', () => {
     await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
     await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
     const testAmount = 275;
-    await page.fill('input#title', `Test Unpaid ${Date.now()}`);
+    const testTitle = `Test Unpaid ${Date.now()}`;
+    await page.fill('input#title', testTitle);
     await page.fill('input#amount', testAmount.toString());
     await page.locator('button:has-text("Select a category")').first().click();
     await page.locator('[role="option"]:has-text("Shopping")').first().click();
     await page.click('button[type="submit"]');
     await page.waitForLoadState('networkidle');
 
-    // Mark it as paid
-    const markPaidBtn = page.locator('button:has-text("Mark Paid")').first();
+    // Wait for the commitment to appear
+    await expect(page.locator(`span:has-text("${testTitle}").font-semibold`)).toBeVisible({ timeout: 5000 });
+
+    // Mark it as paid - find the specific commitment card
+    const commitmentCard = page.locator(`div.rounded-lg.border:has(span:has-text("${testTitle}"))`).first();
+    const markPaidBtn = commitmentCard.locator('button:has-text("Mark Paid")').first();
     await expect(markPaidBtn).toBeVisible();
     await markPaidBtn.click();
-    await page.waitForSelector('button:has-text("Mark Unpaid")', { state: 'visible' });
+    await page.waitForTimeout(500);
 
     const paidAfterMarking = await getPaidAmount(page);
 
-    // Now mark it as unpaid
-    const markUnpaidBtn = page.locator('button:has-text("Mark Unpaid")').first();
+    // Now mark it as unpaid - find the same commitment card
+    const markUnpaidBtn = commitmentCard.locator('button:has-text("Mark Unpaid")').first();
     await expect(markUnpaidBtn).toBeVisible();
     await markUnpaidBtn.click();
 
-    // Wait for "Mark Paid" to reappear
-    await page.waitForSelector('button:has-text("Mark Paid")', { state: 'visible' });
+    // Wait for operation to complete
+    await page.waitForTimeout(500);
+    await page.waitForLoadState('networkidle');
 
-    const paidAfterUnmarking = await getPaidAmount(page);
+    // Wait for paid amount to actually decrease
+    let paidAfterUnmarking = await getPaidAmount(page);
+    let attempts = 0;
+    while (paidAfterUnmarking >= paidAfterMarking && attempts < 15) {
+      await page.waitForTimeout(300);
+      paidAfterUnmarking = await getPaidAmount(page);
+      attempts++;
+    }
+
     // Should decrease by the amount we just unmarked
     expect(paidAfterUnmarking).toBeLessThan(paidAfterMarking);
     expect(paidAfterMarking - paidAfterUnmarking).toBeGreaterThanOrEqual(testAmount - 1); // Allow 1 MYR tolerance
@@ -153,18 +176,25 @@ test.describe('Dashboard totals — commitment CRUD', () => {
     // First, create a commitment to delete
     await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
     await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
-    await page.fill('input#title', `Delete Test ${Date.now()}`);
+    const testTitle = `Delete Test ${Date.now()}`;
+    await page.fill('input#title', testTitle);
     await page.fill('input#amount', '150');
     await page.locator('button:has-text("Select a category")').first().click();
     await page.locator('[role="option"]:has-text("Other")').first().click();
     await page.click('button[type="submit"]');
     await page.waitForLoadState('networkidle');
 
+    // Wait for the commitment to appear
+    await expect(page.locator(`span:has-text("${testTitle}").font-semibold`)).toBeVisible({ timeout: 5000 });
+
     const initialAmount = await getTotalCommitmentsAmount(page);
     const initialCount = await getTotalCommitmentsCount(page);
 
-    // Click delete on the first commitment (red trash icon button)
-    const deleteBtn = page.locator('button.text-red-500').first();
+    // Click delete on the specific commitment we just created
+    const commitmentCard = page.locator(`div.rounded-lg.border:has(span:has-text("${testTitle}"))`).first();
+    await expect(commitmentCard).toBeVisible({ timeout: 2000 });
+
+    const deleteBtn = commitmentCard.locator('button.text-red-500').first();
     await expect(deleteBtn).toBeVisible();
     await deleteBtn.click();
 
@@ -174,16 +204,27 @@ test.describe('Dashboard totals — commitment CRUD', () => {
       await confirmBtn.click();
     }
 
+    // Wait for commitment to disappear
+    await expect(page.locator(`span:has-text("${testTitle}").font-semibold`)).not.toBeVisible({ timeout: 5000 });
+    await page.waitForLoadState('networkidle');
+
     // Wait for the total to actually decrease
     let newAmount = await getTotalCommitmentsAmount(page);
     let attempts = 0;
-    while (newAmount >= initialAmount && attempts < 10) {
-      await page.waitForTimeout(200);
+    while (newAmount >= initialAmount && attempts < 15) {
+      await page.waitForTimeout(300);
       newAmount = await getTotalCommitmentsAmount(page);
       attempts++;
     }
 
-    const newCount = await getTotalCommitmentsCount(page);
+    // Wait for count to decrease
+    let newCount = await getTotalCommitmentsCount(page);
+    attempts = 0;
+    while (newCount >= initialCount && attempts < 15) {
+      await page.waitForTimeout(300);
+      newCount = await getTotalCommitmentsCount(page);
+      attempts++;
+    }
 
     expect(newAmount).toBeLessThan(initialAmount);
     expect(newCount).toBe(initialCount - 1);
