@@ -259,19 +259,23 @@ export const RefactoredDashboard = () => {
         method: 'DELETE',
       });
 
-      await loadDashboardData();
+      // Close modal and show the undo toast BEFORE reloading data.
+      // loadDashboardData sets loading:true which briefly unmounts the modal;
+      // queuing the toast first ensures it is in the Sonner store before any
+      // loading-state re-renders occur.
       setShowDeleteModal(false);
       setCommitmentToDelete(null);
 
-      // Show undo toast via sonner (supports action buttons)
-      sonnerToast(deletedScope === 'single' ? 'Commitment removed for this month' : 'Commitment deleted permanently', {
-        description: `"${deletedCommitment.title}" has been deleted.`,
-        duration: 5000,
-        action: {
-          label: 'Undo',
-          onClick: async () => {
-            try {
-              await apiRequest('/api/commitments', {
+      sonnerToast(
+        deletedScope === 'single' ? 'Commitment removed for this month' : 'Commitment deleted permanently',
+        {
+          description: `"${deletedCommitment.title}" has been deleted.`,
+          duration: 5000,
+          action: {
+            label: 'Undo',
+            // Sonner onClick is (event: MouseEvent) => void — use .then() instead of async/await
+            onClick: () => {
+              apiRequest('/api/commitments', {
                 method: 'POST',
                 body: JSON.stringify({
                   userId: user?.id,
@@ -283,22 +287,27 @@ export const RefactoredDashboard = () => {
                   shared: deletedCommitment.shared,
                   startDate: deletedCommitment.startDate,
                 }),
-              });
-              await loadDashboardData();
-              toast({
-                title: 'Commitment restored!',
-                description: `"${deletedCommitment.title}" has been restored.`,
-              });
-            } catch (undoError: any) {
-              toast({
-                title: 'Undo failed',
-                description: undoError.message || 'Could not restore the commitment.',
-                variant: 'destructive',
-              });
-            }
+              })
+                .then(() => loadDashboardData())
+                .then(() => {
+                  toast({
+                    title: 'Commitment restored!',
+                    description: `"${deletedCommitment.title}" has been restored.`,
+                  });
+                })
+                .catch((undoError: any) => {
+                  toast({
+                    title: 'Undo failed',
+                    description: undoError.message || 'Could not restore the commitment.',
+                    variant: 'destructive',
+                  });
+                });
+            },
           },
         },
-      });
+      );
+
+      await loadDashboardData();
     } catch (error: any) {
       toast({
         title: 'Error',
