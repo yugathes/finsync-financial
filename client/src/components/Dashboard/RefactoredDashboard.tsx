@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { PlusCircle, TrendingUp, Calendar, History, Upload, Users, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { toast as sonnerToast } from 'sonner';
 import { CommitmentWithStatus } from '../Commitments/CommitmentList';
 
 // API helper functions
@@ -241,6 +242,10 @@ export const RefactoredDashboard = () => {
   const handleConfirmDelete = async (deleteScope: 'single' | 'all') => {
     if (!commitmentToDelete) return;
 
+    // Capture snapshot of the commitment before deletion for potential undo
+    const deletedCommitment = { ...commitmentToDelete };
+    const deletedScope = deleteScope;
+
     try {
       const params = new URLSearchParams();
       if (deleteScope === 'single' && commitmentToDelete.recurring) {
@@ -254,14 +259,55 @@ export const RefactoredDashboard = () => {
         method: 'DELETE',
       });
 
-      await loadDashboardData();
+      // Close modal and show the undo toast BEFORE reloading data.
+      // loadDashboardData sets loading:true which briefly unmounts the modal;
+      // queuing the toast first ensures it is in the Sonner store before any
+      // loading-state re-renders occur.
       setShowDeleteModal(false);
       setCommitmentToDelete(null);
 
-      toast({
-        title: 'Commitment deleted!',
-        description: deleteScope === 'single' ? 'Commitment removed for this month' : 'Commitment deleted permanently',
-      });
+      sonnerToast(
+        deletedScope === 'single' ? 'Commitment removed for this month' : 'Commitment deleted permanently',
+        {
+          description: `"${deletedCommitment.title}" has been deleted.`,
+          duration: 5000,
+          action: {
+            label: 'Undo',
+            // Sonner onClick is (event: MouseEvent) => void — use .then() instead of async/await
+            onClick: () => {
+              apiRequest('/api/commitments', {
+                method: 'POST',
+                body: JSON.stringify({
+                  userId: user?.id,
+                  title: deletedCommitment.title,
+                  amount: deletedCommitment.amount,
+                  type: deletedCommitment.type,
+                  category: deletedCommitment.category,
+                  recurring: deletedCommitment.recurring,
+                  shared: deletedCommitment.shared,
+                  startDate: deletedCommitment.startDate,
+                }),
+              })
+                .then(() => loadDashboardData())
+                .then(() => {
+                  toast({
+                    title: 'Commitment restored!',
+                    description: `"${deletedCommitment.title}" has been restored.`,
+                  });
+                })
+                .catch((undoError: any) => {
+                  toast({
+                    title: 'Undo failed',
+                    description: undoError.message || 'Could not restore the commitment.',
+                    variant: 'destructive',
+                  });
+                });
+            },
+          },
+        },
+      );
+
+      await loadDashboardData();
     } catch (error: any) {
       toast({
         title: 'Error',
