@@ -1,6 +1,17 @@
 import { Commitment } from '@prisma/client';
+import { randomUUID } from 'crypto';
 import { prisma } from '../db';
 import { InsertCommitment } from 'lib/types';
+
+function getMonthKeyFromDate(date: Date): string {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+function addMonths(date: Date, monthsToAdd: number): Date {
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth();
+  return new Date(Date.UTC(year, month + monthsToAdd, 1));
+}
 
 class CommitmentService {
   async getCommitmentsForMonth(
@@ -81,7 +92,9 @@ class CommitmentService {
 
       console.log('Commitments fetched:', commitments.length);
 
-      // Filter commitments based on recurring flag and month
+      // Filter commitments based on month visibility rules.
+      // New recurring commitments are materialized as monthly rows (seriesId set),
+      // while legacy recurring rows (no seriesId) still use the old infinite behavior.
       const filteredCommitments = commitments.filter((commitment: any) => {
         const requestedMonth = month; // Format: "YYYY-MM"
 
@@ -102,12 +115,12 @@ class CommitmentService {
           return false;
         }
 
-        // Recurring commitments appear from start month onward (all future months)
-        if (commitment.recurring) {
+        // Backward compatibility for legacy recurring rows.
+        if (commitment.recurring && !commitment.seriesId) {
           return requestedMonth >= commitmentStartMonth;
         }
 
-        // Non-recurring commitments only appear in their exact start month
+        // Materialized rows (including recurring series rows) appear only in their exact month.
         return requestedMonth === commitmentStartMonth;
       });
 
@@ -142,16 +155,44 @@ class CommitmentService {
       return [];
     }
   }
-  async createCommitment(commitment: InsertCommitment & { userId: number }): Promise<Commitment> {
+  async createCommitment(commitment: InsertCommitment & { userId: number | string }): Promise<Commitment> {
     try {
-      const { userId, ...commitmentData } = commitment;
-      const newCommitment = await prisma.commitment.create({
-        data: {
-          userId: String(userId),
-          ...commitmentData,
-        },
-      });
-      return newCommitment;
+      const { userId, recurring = false, startDate, ...commitmentData } = commitment;
+      const userIdAsString = String(userId);
+      const normalizedStartDate = startDate ? new Date(startDate) : new Date();
+      const startOfMonth = new Date(
+        Date.UTC(normalizedStartDate.getUTCFullYear(), normalizedStartDate.getUTCMonth(), 1)
+      );
+
+      if (!recurring) {
+        const newCommitment = await prisma.commitment.create({
+          data: {
+            userId: userIdAsString,
+            recurring: false,
+            startDate: startOfMonth,
+            ...commitmentData,
+          },
+        });
+        return newCommitment;
+      }
+
+      const seriesId = randomUUID();
+      const recurringRows = await Promise.all(
+        Array.from({ length: 12 }).map((_, index) => {
+          const monthDate = addMonths(startOfMonth, index);
+          return prisma.commitment.create({
+            data: {
+              userId: userIdAsString,
+              recurring: true,
+              seriesId,
+              startDate: monthDate,
+              ...commitmentData,
+            },
+          });
+        })
+      );
+
+      return recurringRows[0];
     } catch (error) {
       console.error('Error creating commitment:', error);
       throw error;
@@ -175,15 +216,49 @@ class CommitmentService {
 
   async deleteCommitment(id: string): Promise<void> {
     try {
-      // Delete all payment records first
-      await prisma.commitmentPayment.deleteMany({
-        where: { commitmentId: id },
+      const targetCommitment = await prisma.commitment.findUnique({
+        where: { id },
+        select: { seriesId: true },
       });
 
-      // Then delete the commitment
-      await prisma.commitment.delete({
-        where: { id: id },
-      });
+      if (!targetCommitment) {
+        return;
+      }
+
+      if (targetCommitment.seriesId) {
+        const seriesCommitments = await prisma.commitment.findMany({
+          where: { seriesId: targetCommitment.seriesId },
+          select: { id: true },
+        });
+
+        const seriesCommitmentIds = seriesCommitments.map(commitment => commitment.id);
+        if (seriesCommitmentIds.length === 0) {
+          return;
+        }
+
+        await prisma.$transaction([
+          prisma.commitmentPayment.deleteMany({
+            where: {
+              commitmentId: { in: seriesCommitmentIds },
+            },
+          }),
+          prisma.commitment.deleteMany({
+            where: {
+              id: { in: seriesCommitmentIds },
+            },
+          }),
+        ]);
+        return;
+      }
+
+      await prisma.$transaction([
+        prisma.commitmentPayment.deleteMany({
+          where: { commitmentId: id },
+        }),
+        prisma.commitment.delete({
+          where: { id },
+        }),
+      ]);
     } catch (error) {
       console.error('Error deleting commitment:', error);
       throw error;
@@ -192,12 +267,46 @@ class CommitmentService {
 
   async deleteCommitmentForMonth(id: string, month: string): Promise<void> {
     try {
-      // Only delete the payment record for this specific month
-      // The commitment itself remains for other months
+      const targetCommitment = await prisma.commitment.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          recurring: true,
+          seriesId: true,
+          startDate: true,
+          createdAt: true,
+        },
+      });
+
+      if (!targetCommitment) {
+        return;
+      }
+
+      const sourceDate = targetCommitment.startDate
+        ? new Date(targetCommitment.startDate)
+        : new Date(targetCommitment.createdAt);
+      const commitmentMonth = getMonthKeyFromDate(sourceDate);
+
+      if (targetCommitment.seriesId && commitmentMonth === month) {
+        await prisma.$transaction([
+          prisma.commitmentPayment.deleteMany({
+            where: {
+              commitmentId: id,
+            },
+          }),
+          prisma.commitment.delete({
+            where: { id },
+          }),
+        ]);
+        return;
+      }
+
+      // Legacy fallback: older recurring commitments without seriesId still use
+      // payment deletion for month-level operations.
       await prisma.commitmentPayment.deleteMany({
         where: {
           commitmentId: id,
-          month: month,
+          month,
         },
       });
     } catch (error) {

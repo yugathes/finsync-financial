@@ -5,7 +5,6 @@ import { BalanceCard } from './BalanceCard';
 import { CommitmentsList } from './CommitmentsList';
 import { CommitmentForm } from '../Commitments/CommitmentForm';
 import { IncomeModal } from './IncomeModal';
-import { ImportWizardModal } from '../Commitments/ImportWizardModal';
 import { DeleteConfirmationModal } from '../Commitments/DeleteConfirmationModal';
 import { FloatingActionButton } from '../ui/FloatingActionButton';
 import { Button } from '@/components/ui/button';

@@ -63,9 +63,7 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
             <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-red-800">
               <p className="font-medium">This action cannot be undone.</p>
-              <p className="mt-1">
-                This will permanently delete the commitment and all associated payment records.
-              </p>
+              <p className="mt-1">This will permanently delete the commitment and all associated payment records.</p>
             </div>
           </div>
 
@@ -75,7 +73,7 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
               <p className="text-sm font-medium text-gray-700">
                 This is a recurring commitment. Choose deletion scope:
               </p>
-              
+
               <div className="space-y-2">
                 {/* Single Month Option */}
                 <button
@@ -87,24 +85,21 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                      selectedScope === 'single'
-                        ? 'border-blue-500 bg-blue-500'
-                        : 'border-gray-300'
-                    }`}>
-                      {selectedScope === 'single' && (
-                        <div className="w-2 h-2 bg-white rounded-full" />
-                      )}
+                    <div
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                        selectedScope === 'single' ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
+                      }`}
+                    >
+                      {selectedScope === 'single' && <div className="w-2 h-2 bg-white rounded-full" />}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-gray-600" />
-                        <p className="font-medium text-gray-900">
-                          Delete for {formatMonth(currentMonth)} only
-                        </p>
+                        <p className="font-medium text-gray-900">Delete for {formatMonth(currentMonth)} only</p>
                       </div>
                       <p className="text-sm text-gray-600 mt-1">
-                        Removes only the payment record for this month. The commitment will still appear in other months.
+                        Removes only this month's commitment entry. Other months in the recurring series remain
+                        unchanged.
                       </p>
                     </div>
                   </div>
@@ -120,21 +115,17 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                      selectedScope === 'all'
-                        ? 'border-red-500 bg-red-500'
-                        : 'border-gray-300'
-                    }`}>
-                      {selectedScope === 'all' && (
-                        <div className="w-2 h-2 bg-white rounded-full" />
-                      )}
+                    <div
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                        selectedScope === 'all' ? 'border-red-500 bg-red-500' : 'border-gray-300'
+                      }`}
+                    >
+                      {selectedScope === 'all' && <div className="w-2 h-2 bg-white rounded-full" />}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <Trash2 className="h-4 w-4 text-red-600" />
-                        <p className="font-medium text-gray-900">
-                          Delete permanently (all months)
-                        </p>
+                        <p className="font-medium text-gray-900">Delete permanently (all months)</p>
                       </div>
                       <p className="text-sm text-gray-600 mt-1">
                         Completely removes this commitment and all payment records across all months.
@@ -149,21 +140,13 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
           {/* Non-recurring commitment message */}
           {!commitment.recurring && (
             <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <p className="text-sm text-gray-700">
-                This is a one-time commitment and will be permanently deleted.
-              </p>
+              <p className="text-sm text-gray-700">This is a one-time commitment and will be permanently deleted.</p>
             </div>
           )}
 
           {/* Action Buttons */}
           <div className="flex gap-3 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCancel}
-              disabled={deleting}
-              className="flex-1"
-            >
+            <Button type="button" variant="outline" onClick={onCancel} disabled={deleting} className="flex-1">
               Cancel
             </Button>
             <Button
