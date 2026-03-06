@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Check, Undo2, Users, Clock, Trash2, FileText } from 'lucide-react';
+import { Plus, Check, Undo2, Users, Clock, Trash2, FileText, Repeat, Sliders } from 'lucide-react';
 
 interface Commitment {
   id: string;
@@ -25,6 +25,52 @@ interface CommitmentsListProps {
   onDelete?: (id: string) => void;
 }
 
+/** Group a list of commitments into static, dynamic, and shared buckets. */
+function groupByType(items: Commitment[]) {
+  return {
+    shared: items.filter(c => c.shared),
+    static: items.filter(c => !c.shared && c.type === 'static'),
+    dynamic: items.filter(c => !c.shared && c.type === 'dynamic'),
+  };
+}
+
+interface TypeGroupProps {
+  label: string;
+  icon: React.ReactNode;
+  items: Commitment[];
+  currency: string;
+  onMarkPaid: (id: string, amount: number) => void;
+  onMarkUnpaid?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  /** Additional classes applied to the group wrapper */
+  className?: string;
+}
+
+/** Renders a labelled group of commitment items of the same type. */
+const TypeGroup = ({ label, icon, items, currency, onMarkPaid, onMarkUnpaid, onDelete, className = '' }: TypeGroupProps) => {
+  if (items.length === 0) return null;
+  return (
+    <div className={`space-y-2 ${className}`} data-testid={`commitment-group-${label.toLowerCase()}`}>
+      <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+        {icon}
+        <span>{label} ({items.length})</span>
+      </div>
+      <div className="space-y-2 pl-1 border-l-2 border-muted">
+        {items.map(commitment => (
+          <CommitmentItem
+            key={commitment.id}
+            commitment={commitment}
+            currency={currency}
+            onMarkPaid={onMarkPaid}
+            onMarkUnpaid={onMarkUnpaid}
+            onDelete={onDelete}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const CommitmentsList = ({
   commitments,
   currency = 'MYR',
@@ -39,6 +85,9 @@ export const CommitmentsList = ({
   const paidCommitments = activeCommitments.filter(c => c.isPaid);
   const importedCommitments = commitments.filter(c => c.isImported);
   const totalUnpaid = unpaidCommitments.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
+
+  const unpaidGroups = groupByType(unpaidCommitments);
+  const paidGroups = groupByType(paidCommitments);
 
   return (
     <Card className="bg-white shadow-lg border-0 animate-fade-in">
@@ -76,44 +125,78 @@ export const CommitmentsList = ({
           </div>
         ) : (
           <>
-            {/* Unpaid Commitments */}
+            {/* Unpaid Commitments — grouped by type */}
             {unpaidCommitments.length > 0 && (
-              <div className="space-y-3">
+              <div className="space-y-4" data-testid="section-pending">
                 <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
                   Pending ({unpaidCommitments.length})
                 </h3>
-                {unpaidCommitments.map(commitment => (
-                  <CommitmentItem
-                    key={commitment.id}
-                    commitment={commitment}
-                    currency={currency}
-                    onMarkPaid={onMarkPaid}
-                    onMarkUnpaid={onMarkUnpaid}
-                    onDelete={onDelete}
-                  />
-                ))}
+                <TypeGroup
+                  label="Static"
+                  icon={<Repeat className="h-3.5 w-3.5 text-blue-500" />}
+                  items={unpaidGroups.static}
+                  currency={currency}
+                  onMarkPaid={onMarkPaid}
+                  onMarkUnpaid={onMarkUnpaid}
+                  onDelete={onDelete}
+                />
+                <TypeGroup
+                  label="Dynamic"
+                  icon={<Sliders className="h-3.5 w-3.5 text-orange-500" />}
+                  items={unpaidGroups.dynamic}
+                  currency={currency}
+                  onMarkPaid={onMarkPaid}
+                  onMarkUnpaid={onMarkUnpaid}
+                  onDelete={onDelete}
+                />
+                <TypeGroup
+                  label="Shared"
+                  icon={<Users className="h-3.5 w-3.5 text-purple-500" />}
+                  items={unpaidGroups.shared}
+                  currency={currency}
+                  onMarkPaid={onMarkPaid}
+                  onMarkUnpaid={onMarkUnpaid}
+                  onDelete={onDelete}
+                />
               </div>
             )}
 
             {/* Divider */}
             {unpaidCommitments.length > 0 && paidCommitments.length > 0 && <div className="border-t my-6"></div>}
 
-            {/* Paid Commitments */}
+            {/* Paid Commitments — grouped by type */}
             {paidCommitments.length > 0 && (
-              <div className="space-y-3">
+              <div className="space-y-4" data-testid="section-completed">
                 <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
                   Completed ({paidCommitments.length})
                 </h3>
-                {paidCommitments.map(commitment => (
-                  <CommitmentItem
-                    key={commitment.id}
-                    commitment={commitment}
-                    currency={currency}
-                    onMarkPaid={onMarkPaid}
-                    onMarkUnpaid={onMarkUnpaid}
-                    onDelete={onDelete}
-                  />
-                ))}
+                <TypeGroup
+                  label="Static"
+                  icon={<Repeat className="h-3.5 w-3.5 text-blue-500" />}
+                  items={paidGroups.static}
+                  currency={currency}
+                  onMarkPaid={onMarkPaid}
+                  onMarkUnpaid={onMarkUnpaid}
+                  onDelete={onDelete}
+                />
+                <TypeGroup
+                  label="Dynamic"
+                  icon={<Sliders className="h-3.5 w-3.5 text-orange-500" />}
+                  items={paidGroups.dynamic}
+                  currency={currency}
+                  onMarkPaid={onMarkPaid}
+                  onMarkUnpaid={onMarkUnpaid}
+                  onDelete={onDelete}
+                />
+                <TypeGroup
+                  label="Shared"
+                  icon={<Users className="h-3.5 w-3.5 text-purple-500" />}
+                  items={paidGroups.shared}
+                  currency={currency}
+                  onMarkPaid={onMarkPaid}
+                  onMarkUnpaid={onMarkUnpaid}
+                  onDelete={onDelete}
+                />
               </div>
             )}
 

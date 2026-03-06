@@ -27,6 +27,7 @@ export type Commitment = {
   category: string;
   amount: string;
   recurring: boolean;
+  seriesId?: string | null;
   shared: boolean;
   groupId?: string | null;
   startDate?: Date | null;
@@ -65,6 +66,7 @@ export type InsertCommitment = {
   category: string;
   amount: string;
   recurring?: boolean;
+  seriesId?: string;
   shared?: boolean;
   groupId?: string;
   startDate?: Date | string;

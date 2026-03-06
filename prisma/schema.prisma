@@ -8,12 +8,12 @@ datasource db {
 }
 
 model User {
-  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
-  email         String    @unique
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  email         String   @unique
   password      String?
-  monthlyIncome Decimal?  @default(0) @map("monthly_income") @db.Decimal(10, 2)
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+  monthlyIncome Decimal? @default(0) @map("monthly_income") @db.Decimal(10, 2)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
   monthlyIncomes     MonthlyIncome[]
@@ -26,9 +26,9 @@ model User {
 }
 
 model MonthlyIncome {
-  id        String    @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
   userId    String   @map("user_id") @db.Uuid
-  month     String   // e.g., '2025-07'
+  month     String // e.g., '2025-07'
   amount    Decimal  @db.Decimal(10, 2)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
@@ -42,11 +42,12 @@ model MonthlyIncome {
 model Commitment {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
   userId     String    @map("user_id") @db.Uuid
-  type       String    // 'static' | 'dynamic'
+  type       String // 'static' | 'dynamic'
   title      String
   category   String
   amount     Decimal   @db.Decimal(10, 2)
   recurring  Boolean   @default(false)
+  seriesId   String?   @map("series_id") @db.Uuid
   shared     Boolean   @default(false)
   groupId    String?   @map("group_id") @db.Uuid
   startDate  DateTime? @map("start_date") @db.Date
@@ -64,9 +65,9 @@ model Commitment {
 }
 
 model CommitmentPayment {
-  id        String    @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
   commitmentId String   @map("commitment_id") @db.Uuid
-  month        String   // e.g., '2025-07'
+  month        String // e.g., '2025-07'
   paidBy       String   @map("paid_by") @db.Uuid
   amountPaid   Decimal  @map("amount_paid") @db.Decimal(10, 2)
   paidAt       DateTime @default(now()) @map("paid_at")
@@ -98,8 +99,8 @@ model GroupMember {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
   groupId   String   @map("group_id") @db.Uuid
   userId    String   @map("user_id") @db.Uuid
-  role      String   // 'owner' | 'member'
-  status    String   // 'invited' | 'accepted'
+  role      String // 'owner' | 'member'
+  status    String // 'invited' | 'accepted'
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
