@@ -52,6 +52,8 @@ jobs:
           BASE_URL=http://localhost:5000
           TEST_USER_EMAIL=testuser@yugathes.online
           TEST_USER_PASSWORD=testpassword
+          EOF
+          cat >> .env << EOF
           DATABASE_URL=postgresql://postgres:postgres@localhost:5432/finsync_test
           VITE_REACT_APP_SUPABASE_URL=${{ secrets.VITE_REACT_APP_SUPABASE_URL }}
           VITE_REACT_APP_SUPABASE_ANON_KEY=${{ secrets.VITE_REACT_APP_SUPABASE_ANON_KEY }}
