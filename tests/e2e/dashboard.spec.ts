@@ -366,7 +366,9 @@ test.describe('Dashboard — commitment type visual separation', () => {
     await page.waitForLoadState('networkidle');
 
     // The Static group header should be visible within the Pending section
-    const staticGroup = page.locator('[data-testid="commitment-group-static"]');
+    const staticGroup = page
+      .locator('[data-testid="section-pending"]')
+      .locator('[data-testid="commitment-group-static"]');
     await expect(staticGroup).toBeVisible({ timeout: 5000 });
 
     // The commitment we created should be inside that group
@@ -381,7 +383,9 @@ test.describe('Dashboard — commitment type visual separation', () => {
     await page.fill('input#amount', '250');
 
     // Switch to Dynamic type if a toggle/radio exists
-    const dynamicOption = page.locator('label:has-text("Dynamic"), button:has-text("Dynamic"), [value="dynamic"]').first();
+    const dynamicOption = page
+      .locator('label:has-text("Dynamic"), button:has-text("Dynamic"), [value="dynamic"]')
+      .first();
     if (await dynamicOption.isVisible({ timeout: 1000 }).catch(() => false)) {
       await dynamicOption.click();
     }
