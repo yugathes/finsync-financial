@@ -23,6 +23,8 @@ interface CommitmentsListProps {
   onMarkUnpaid?: (id: string) => void;
   onAddNew: () => void;
   onDelete?: (id: string) => void;
+  /** When true, the view is read-only (historical month) */
+  isHistorical?: boolean;
 }
 
 /** Group a list of commitments into static, dynamic, and shared buckets. */
@@ -44,10 +46,11 @@ interface TypeGroupProps {
   onDelete?: (id: string) => void;
   /** Additional classes applied to the group wrapper */
   className?: string;
+  isHistorical?: boolean;
 }
 
 /** Renders a labelled group of commitment items of the same type. */
-const TypeGroup = ({ label, icon, items, currency, onMarkPaid, onMarkUnpaid, onDelete, className = '' }: TypeGroupProps) => {
+const TypeGroup = ({ label, icon, items, currency, onMarkPaid, onMarkUnpaid, onDelete, className = '', isHistorical }: TypeGroupProps) => {
   if (items.length === 0) return null;
   return (
     <div className={`space-y-2 ${className}`} data-testid={`commitment-group-${label.toLowerCase()}`}>
@@ -64,6 +67,7 @@ const TypeGroup = ({ label, icon, items, currency, onMarkPaid, onMarkUnpaid, onD
             onMarkPaid={onMarkPaid}
             onMarkUnpaid={onMarkUnpaid}
             onDelete={onDelete}
+            isHistorical={isHistorical}
           />
         ))}
       </div>
@@ -78,6 +82,7 @@ export const CommitmentsList = ({
   onMarkUnpaid,
   onAddNew,
   onDelete,
+  isHistorical = false,
 }: CommitmentsListProps) => {
   // Exclude imported commitments from active totals
   const activeCommitments = commitments.filter(c => !c.isImported);
@@ -93,16 +98,20 @@ export const CommitmentsList = ({
     <Card className="bg-white shadow-lg border-0 animate-fade-in">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-medium text-blue-800">This Month's Commitments</CardTitle>
-          <Button
-            variant="default"
-            size="sm"
-            onClick={onAddNew}
-            className="hidden sm:flex bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Add New
-          </Button>
+          <CardTitle className="text-lg font-medium text-blue-800">
+            {isHistorical ? 'Historical Commitments' : "This Month's Commitments"}
+          </CardTitle>
+          {!isHistorical && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={onAddNew}
+              className="hidden sm:flex bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add New
+            </Button>
+          )}
         </div>
         {totalUnpaid > 0 && (
           <div className="flex items-center gap-2 text-sm">
@@ -116,12 +125,21 @@ export const CommitmentsList = ({
       <CardContent className="space-y-4">
         {commitments.length === 0 ? (
           <div className="text-center py-12 text-blue-600">
-            <div className="text-lg font-medium mb-2">No commitments yet</div>
-            <div className="text-sm mb-4">Start by adding your first commitment</div>
-            <Button variant="default" onClick={onAddNew} className="bg-blue-600 hover:bg-blue-700 text-white">
-              <Plus className="h-4 w-4 mr-1" />
-              Add Your First Commitment
-            </Button>
+            {isHistorical ? (
+              <>
+                <div className="text-lg font-medium mb-2">No commitments recorded</div>
+                <div className="text-sm text-muted-foreground">No commitments were recorded for this period.</div>
+              </>
+            ) : (
+              <>
+                <div className="text-lg font-medium mb-2">No commitments yet</div>
+                <div className="text-sm mb-4">Start by adding your first commitment</div>
+                <Button variant="default" onClick={onAddNew} className="bg-blue-600 hover:bg-blue-700 text-white">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Your First Commitment
+                </Button>
+              </>
+            )}
           </div>
         ) : (
           <>
@@ -139,6 +157,7 @@ export const CommitmentsList = ({
                   onMarkPaid={onMarkPaid}
                   onMarkUnpaid={onMarkUnpaid}
                   onDelete={onDelete}
+                  isHistorical={isHistorical}
                 />
                 <TypeGroup
                   label="Dynamic"
@@ -148,6 +167,7 @@ export const CommitmentsList = ({
                   onMarkPaid={onMarkPaid}
                   onMarkUnpaid={onMarkUnpaid}
                   onDelete={onDelete}
+                  isHistorical={isHistorical}
                 />
                 <TypeGroup
                   label="Shared"
@@ -157,6 +177,7 @@ export const CommitmentsList = ({
                   onMarkPaid={onMarkPaid}
                   onMarkUnpaid={onMarkUnpaid}
                   onDelete={onDelete}
+                  isHistorical={isHistorical}
                 />
               </div>
             )}
@@ -178,6 +199,7 @@ export const CommitmentsList = ({
                   onMarkPaid={onMarkPaid}
                   onMarkUnpaid={onMarkUnpaid}
                   onDelete={onDelete}
+                  isHistorical={isHistorical}
                 />
                 <TypeGroup
                   label="Dynamic"
@@ -187,6 +209,7 @@ export const CommitmentsList = ({
                   onMarkPaid={onMarkPaid}
                   onMarkUnpaid={onMarkUnpaid}
                   onDelete={onDelete}
+                  isHistorical={isHistorical}
                 />
                 <TypeGroup
                   label="Shared"
@@ -196,6 +219,7 @@ export const CommitmentsList = ({
                   onMarkPaid={onMarkPaid}
                   onMarkUnpaid={onMarkUnpaid}
                   onDelete={onDelete}
+                  isHistorical={isHistorical}
                 />
               </div>
             )}
@@ -235,9 +259,10 @@ interface CommitmentItemProps {
   onMarkPaid: (id: string, amount: number) => void;
   onMarkUnpaid?: (id: string) => void;
   onDelete?: (id: string) => void;
+  isHistorical?: boolean;
 }
 
-const CommitmentItem = ({ commitment, currency, onMarkPaid, onMarkUnpaid, onDelete }: CommitmentItemProps) => {
+const CommitmentItem = ({ commitment, currency, onMarkPaid, onMarkUnpaid, onDelete, isHistorical }: CommitmentItemProps) => {
   return (
     <div
       className={`flex flex-col gap-3 p-4 rounded-lg border transition-smooth animate-fade-in ${
@@ -245,7 +270,9 @@ const CommitmentItem = ({ commitment, currency, onMarkPaid, onMarkUnpaid, onDele
           ? 'bg-muted/30 border-muted opacity-75'
           : commitment.isImported
             ? 'bg-purple-50/30 border-purple-100'
-            : 'bg-background border-border hover:shadow-sm hover:border-primary/20'
+            : isHistorical
+              ? 'bg-amber-50/30 border-amber-100'
+              : 'bg-background border-border hover:shadow-sm hover:border-primary/20'
       }`}
     >
       {/* Header Row: Title, Amount, Menu */}
@@ -296,7 +323,8 @@ const CommitmentItem = ({ commitment, currency, onMarkPaid, onMarkUnpaid, onDele
             variant="secondary"
             size="sm"
             onClick={() => onMarkUnpaid && onMarkUnpaid(commitment.id)}
-            disabled={!onMarkUnpaid}
+            disabled={!onMarkUnpaid || isHistorical}
+            title={isHistorical ? 'Cannot modify historical records' : undefined}
             className="flex-1"
           >
             <Undo2 className="h-4 w-4 mr-1" />
@@ -307,6 +335,8 @@ const CommitmentItem = ({ commitment, currency, onMarkPaid, onMarkUnpaid, onDele
             variant="success"
             size="sm"
             onClick={() => onMarkPaid(commitment.id, commitment.amount)}
+            disabled={isHistorical}
+            title={isHistorical ? 'Cannot modify historical records' : undefined}
             className="flex-1"
           >
             <Check className="h-4 w-4 mr-1" />
@@ -319,7 +349,9 @@ const CommitmentItem = ({ commitment, currency, onMarkPaid, onMarkUnpaid, onDele
             variant="ghost"
             size="sm"
             onClick={() => onDelete(commitment.id)}
-            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+            disabled={isHistorical}
+            title={isHistorical ? 'Cannot modify historical records' : undefined}
+            className="text-red-500 hover:text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:pointer-events-none"
           >
             <Trash2 className="h-4 w-4" />
           </Button>

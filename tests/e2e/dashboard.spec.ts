@@ -431,3 +431,89 @@ test.describe('Dashboard — commitment type visual separation', () => {
     await expect(completedSection).toBeVisible({ timeout: 5000 });
   });
 });
+
+test.describe('Dashboard — month selector', () => {
+  test.beforeEach(async ({ page }) => {
+    await login(page);
+  });
+
+  test('month selector is rendered on the dashboard', async ({ page }) => {
+    const selector = page.locator('[data-testid="month-selector"]');
+    await expect(selector).toBeVisible({ timeout: 7000 });
+
+    const prevBtn = page.locator('[data-testid="month-prev"]');
+    const nextBtn = page.locator('[data-testid="month-next"]');
+    await expect(prevBtn).toBeVisible();
+    await expect(nextBtn).toBeVisible();
+  });
+
+  test('clicking previous arrow navigates to the previous month', async ({ page }) => {
+    const dropdownTrigger = page.locator('[data-testid="month-dropdown-trigger"]');
+    await expect(dropdownTrigger).toBeVisible({ timeout: 7000 });
+    const monthBefore = await dropdownTrigger.innerText();
+
+    await page.click('[data-testid="month-prev"]');
+    await page.waitForLoadState('networkidle');
+
+    const monthAfter = await dropdownTrigger.innerText();
+    expect(monthAfter).not.toBe(monthBefore);
+  });
+
+  test('clicking next arrow navigates to the next month', async ({ page }) => {
+    const dropdownTrigger = page.locator('[data-testid="month-dropdown-trigger"]');
+    await expect(dropdownTrigger).toBeVisible({ timeout: 7000 });
+    const monthBefore = await dropdownTrigger.innerText();
+
+    await page.click('[data-testid="month-next"]');
+    await page.waitForLoadState('networkidle');
+
+    const monthAfter = await dropdownTrigger.innerText();
+    expect(monthAfter).not.toBe(monthBefore);
+  });
+
+  test('historical banner is shown when viewing a past month', async ({ page }) => {
+    // Navigate back to a previous month
+    await page.click('[data-testid="month-prev"]');
+    await page.waitForLoadState('networkidle');
+
+    const banner = page.locator('[data-testid="historical-banner"]');
+    await expect(banner).toBeVisible({ timeout: 5000 });
+  });
+
+  test('historical badge is shown in the month selector for a past month', async ({ page }) => {
+    await page.click('[data-testid="month-prev"]');
+    await page.waitForLoadState('networkidle');
+
+    const badge = page.locator('[data-testid="historical-badge"]');
+    await expect(badge).toBeVisible({ timeout: 5000 });
+  });
+
+  test('no historical banner on current month', async ({ page }) => {
+    // The dashboard starts on the current month; ensure no historical banner is shown
+    const banner = page.locator('[data-testid="historical-banner"]');
+    await expect(banner).not.toBeVisible({ timeout: 3000 });
+  });
+
+  test('write action buttons are disabled when viewing a historical month', async ({ page }) => {
+    // First create a commitment so there are items to check
+    await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
+    await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
+    await page.fill('input#title', `History Disable Test ${Date.now()}`);
+    await page.fill('input#amount', '100');
+    await page.locator('button:has-text("Select a category")').first().click();
+    await page.locator('[role="option"]:has-text("Other")').first().click();
+    await page.click('button[type="submit"]');
+    await page.waitForLoadState('networkidle');
+
+    // Navigate to previous month
+    await page.click('[data-testid="month-prev"]');
+    await page.waitForLoadState('networkidle');
+
+    // If there are any Mark Paid buttons, they should be disabled
+    const markPaidBtns = page.locator('button:has-text("Mark Paid")');
+    const count = await markPaidBtns.count();
+    for (let i = 0; i < count; i++) {
+      await expect(markPaidBtns.nth(i)).toBeDisabled();
+    }
+  });
+});

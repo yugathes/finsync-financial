@@ -85,6 +85,16 @@ export async function deleteCommitment(req: Request, res: Response) {
   }
 }
 
+export async function getMonthsWithData(req: Request, res: Response) {
+  try {
+    const userId = req.params.userId;
+    const months = await CommitmentService.getMonthsWithData(userId);
+    res.json(months);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch months with data' });
+  }
+}
+
 // COMMENTED OUT: Import functionality disabled
 // export async function importCommitments(req: Request, res: Response) {
 //   try {
