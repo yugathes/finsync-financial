@@ -311,10 +311,12 @@ test.describe('Month navigation with recurring vs non-recurring commitments', ()
     }
   });
 
-  test('recurring commitment appears in past months', async ({ page }) => {
+  test('recurring commitment does NOT appear in months before its start date', async ({ page }) => {
     const recurringTitle = `Recurring Past ${Date.now()}`;
 
-    // Create a recurring commitment
+    // Create a recurring commitment in the current month.
+    // The service materialises rows for the current month + 11 future months only;
+    // no rows are created for months that precede the commitment's startDate.
     await openCommitmentForm(page);
     await fillCommitmentForm(page, {
       title: recurringTitle,
@@ -338,8 +340,9 @@ test.describe('Month navigation with recurring vs non-recurring commitments', ()
       await prevMonthBtn.click();
       await page.waitForLoadState('networkidle');
 
-      // Recurring commitment should appear in previous month
-      await expect(page.locator(`span:has-text("${recurringTitle}").font-semibold`)).toBeVisible({ timeout: 5000 });
+      // Recurring commitment should NOT appear in a month before its start date
+      const commitmentInPrevMonth = page.locator(`span:has-text("${recurringTitle}").font-semibold`);
+      await expect(commitmentInPrevMonth).not.toBeVisible({ timeout: 5000 });
     }
   });
 });
