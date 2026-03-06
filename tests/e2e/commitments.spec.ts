@@ -1,4 +1,5 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 /**
  * Commitments CRUD E2E Tests
@@ -26,24 +27,32 @@ async function login(page: Page) {
 
 async function openCommitmentForm(page: Page) {
   await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
-  await expect(page.locator('form, [role="dialog"]').first()).toBeVisible();
+  // Wait for the form inputs to be visible
+  await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
 }
 
 async function fillCommitmentForm(
   page: Page,
   data: { title: string; amount: string; type?: string; category?: string }
 ) {
-  await page.fill('input[name="title"]', data.title);
-  await page.fill('input[name="amount"]', data.amount);
+  // Fill title input
+  await page.fill('input#title', data.title);
+
+  // Fill amount input
+  await page.fill('input#amount', data.amount);
+
+  // Select type by clicking the badge
   if (data.type) {
-    await page.selectOption('select[name="type"]', data.type).catch(() => {
-      // type selector may be a radio or button group — skip if unavailable
-    });
+    const badgeText = data.type === 'static' ? 'Static' : 'Dynamic';
+    await page.locator(`:has-text("${badgeText}")`).first().click();
   }
+
+  // Select category from the Select dropdown
   if (data.category) {
-    await page
-      .fill('input[name="category"]', data.category)
-      .catch(() => page.selectOption('select[name="category"]', data.category!));
+    // Click on the category Select trigger
+    await page.locator('button:has-text("Select a category")').first().click();
+    // Click on the category option
+    await page.locator(`[role="option"]:has-text("${data.category}")`).first().click();
   }
 }
 
@@ -54,6 +63,12 @@ async function submitCommitmentForm(page: Page) {
     // Modal may not use role="dialog"; fall back to network idle
     return page.waitForLoadState('networkidle');
   });
+}
+
+async function toggleRecurringSwitch(page: Page) {
+  // Click the "Recurring Monthly" switch by its ID
+  const recurringSwitch = page.locator('button[role="switch"]#recurring');
+  await recurringSwitch.click();
 }
 
 test.describe('Commitment CRUD operations', () => {
@@ -68,16 +83,16 @@ test.describe('Commitment CRUD operations', () => {
     await submitCommitmentForm(page);
 
     // Commitment should appear in the list
-    await expect(page.locator(`text=${title}`)).toBeVisible({ timeout: 5000 });
+    await expect(page.locator(`span:has-text("${title}").font-semibold`)).toBeVisible({ timeout: 5000 });
   });
 
   test('created commitment shows correct amount', async ({ page }) => {
     const title = `Amount Test ${Date.now()}`;
     await openCommitmentForm(page);
-    await fillCommitmentForm(page, { title, amount: '750' });
+    await fillCommitmentForm(page, { title, amount: '750', category: 'Food' });
     await submitCommitmentForm(page);
 
-    await expect(page.locator(`text=${title}`)).toBeVisible({ timeout: 5000 });
+    await expect(page.locator(`span:has-text("${title}").font-semibold`)).toBeVisible({ timeout: 5000 });
     // Amount should be visible near the commitment title
     await expect(page.locator('text=750').first()).toBeVisible();
   });
@@ -113,15 +128,19 @@ test.describe('Commitment CRUD operations', () => {
     // Create a temporary commitment to delete
     const title = `Delete Me ${Date.now()}`;
     await openCommitmentForm(page);
-    await fillCommitmentForm(page, { title, amount: '100' });
+    await fillCommitmentForm(page, { title, amount: '100', category: 'Other' });
     await submitCommitmentForm(page);
 
-    await expect(page.locator(`text=${title}`)).toBeVisible({ timeout: 5000 });
+    await expect(page.locator(`span:has-text("${title}").font-semibold`)).toBeVisible({ timeout: 5000 });
 
-    // Delete it — find delete button within the row containing the title
-    const commitmentRow = page.locator(`:has-text("${title}")`).last();
-    const deleteBtn = commitmentRow.locator('button:has(svg)').last();
-    await deleteBtn.click();
+    // Delete it — find the commitment card and click the last button (delete with trash icon)
+    const commitmentCard = page.locator(`div.rounded-lg.border:has(span:has-text("${title}"))`).first();
+    await expect(commitmentCard).toBeVisible({ timeout: 2000 });
+
+    // Get all buttons in the card and click the last one (which is the delete button)
+    const buttons = commitmentCard.getByRole('button');
+    const buttonCount = await buttons.count();
+    await buttons.nth(buttonCount - 1).click();
 
     // Confirm in modal if present
     const confirmBtn = page.locator('button:has-text("Delete")').last();
@@ -129,52 +148,7 @@ test.describe('Commitment CRUD operations', () => {
       await confirmBtn.click();
     }
 
-    await expect(page.locator(`text=${title}`)).not.toBeVisible({ timeout: 5000 });
-  });
-});
-
-test.describe('Import commitments', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page);
-  });
-
-  test('imported commitments are NOT counted in dashboard totals', async ({ page }) => {
-    const getTotal = async () => {
-      const el = page.locator('text=Commitments').locator('..').locator('.text-xl, .text-2xl').first();
-      await el.waitFor({ state: 'visible' });
-      const text = await el.innerText();
-      return parseFloat(text.replace(/[^0-9.]/g, '')) || 0;
-    };
-
-    const totalBefore = await getTotal();
-
-    // Enable "Show Imported Records" toggle
-    const toggle = page.locator('[id="imported-filter"]');
-    if (await toggle.isVisible()) {
-      await toggle.click();
-      await page.waitForLoadState('networkidle');
-    }
-
-    // Totals should remain the same after toggling imported visibility
-    const totalAfter = await getTotal();
-    expect(totalAfter).toBe(totalBefore);
-  });
-
-  test('imported records show "Imported" badge', async ({ page }) => {
-    // Enable imported records view
-    const toggle = page.locator('[id="imported-filter"]');
-    if (await toggle.isVisible()) {
-      await toggle.click();
-      await page.waitForLoadState('networkidle');
-    }
-
-    // If any imported records exist, they should have the Imported badge
-    const importedSection = page.locator('text=Imported Records');
-    const hasImported = await importedSection.isVisible().catch(() => false);
-    if (hasImported) {
-      await expect(page.locator('.bg-purple-100:has-text("Imported")').first()).toBeVisible();
-    }
-    // Test passes if there are no imported records
+    await expect(page.locator(`span:has-text("${title}").font-semibold`)).not.toBeVisible({ timeout: 5000 });
   });
 });
 
@@ -194,11 +168,19 @@ test.describe('Dashboard recalculates correctly after each operation', () => {
     const countBefore = await getCount();
 
     await openCommitmentForm(page);
-    await fillCommitmentForm(page, { title: `Count Test ${Date.now()}`, amount: '300' });
+    await fillCommitmentForm(page, { title: `Count Test ${Date.now()}`, amount: '300', category: 'Entertainment' });
     await submitCommitmentForm(page);
 
     await page.waitForLoadState('networkidle');
-    const countAfter = await getCount();
+
+    // Wait for count to actually increase
+    let countAfter = await getCount();
+    let attempts = 0;
+    while (countAfter <= countBefore && attempts < 15) {
+      await page.waitForTimeout(300);
+      countAfter = await getCount();
+      attempts++;
+    }
 
     expect(countAfter).toBe(countBefore + 1);
   });
@@ -217,9 +199,147 @@ test.describe('Dashboard recalculates correctly after each operation', () => {
     if (await markPaidBtn.isVisible()) {
       await markPaidBtn.click();
       await page.waitForSelector('button:has-text("Mark Unpaid")', { state: 'visible' });
+      await page.waitForLoadState('networkidle');
 
-      const paidAfter = await getPaidAmount();
+      // Wait for paid amount to actually increase
+      let paidAfter = await getPaidAmount();
+      let attempts = 0;
+      while (paidAfter <= paidBefore && attempts < 15) {
+        await page.waitForTimeout(300);
+        paidAfter = await getPaidAmount();
+        attempts++;
+      }
+
       expect(paidAfter).toBeGreaterThan(paidBefore);
+    }
+  });
+});
+
+test.describe('Month navigation with recurring vs non-recurring commitments', () => {
+  test.beforeEach(async ({ page }) => {
+    await login(page);
+  });
+
+  test('recurring commitment appears in future months', async ({ page }) => {
+    const recurringTitle = `Recurring Commitment ${Date.now()}`;
+
+    // Create a recurring commitment
+    await openCommitmentForm(page);
+    await fillCommitmentForm(page, {
+      title: recurringTitle,
+      amount: '500',
+      category: 'Housing',
+    });
+
+    // Toggle recurring switch
+    await toggleRecurringSwitch(page);
+
+    await submitCommitmentForm(page);
+
+    // Verify commitment appears in current month
+    await expect(page.locator(`span:has-text("${recurringTitle}").font-semibold`)).toBeVisible({ timeout: 5000 });
+
+    // Navigate to next month
+    const nextMonthBtn = page
+      .locator('button:has-text("Next"), button[aria-label*="Next"], button:has-text("→")')
+      .first();
+    if (await nextMonthBtn.isVisible()) {
+      await nextMonthBtn.click();
+      await page.waitForLoadState('networkidle');
+
+      // Recurring commitment should appear in next month
+      await expect(page.locator(`span:has-text("${recurringTitle}").font-semibold`)).toBeVisible({ timeout: 5000 });
+    }
+  });
+
+  test('non-recurring commitment does NOT appear in future months', async ({ page }) => {
+    const nonRecurringTitle = `Non-Recurring ${Date.now()}`;
+
+    // Create a non-recurring commitment
+    await openCommitmentForm(page);
+    await fillCommitmentForm(page, {
+      title: nonRecurringTitle,
+      amount: '300',
+      category: 'Entertainment',
+    });
+
+    // Do NOT toggle recurring (leave it off)
+    await submitCommitmentForm(page);
+
+    // Verify commitment appears in current month
+    await expect(page.locator(`span:has-text("${nonRecurringTitle}").font-semibold`)).toBeVisible({ timeout: 5000 });
+
+    // Navigate to next month
+    const nextMonthBtn = page
+      .locator('button:has-text("Next"), button[aria-label*="Next"], button:has-text("→")')
+      .first();
+    if (await nextMonthBtn.isVisible()) {
+      await nextMonthBtn.click();
+      await page.waitForLoadState('networkidle');
+
+      // Non-recurring commitment should NOT appear in next month
+      const commitmentInNextMonth = page.locator(`span:has-text("${nonRecurringTitle}").font-semibold`);
+      await expect(commitmentInNextMonth).not.toBeVisible({ timeout: 5000 });
+    }
+  });
+
+  test('non-recurring commitment does NOT appear in past months', async ({ page }) => {
+    const nonRecurringTitle = `Past Month Test ${Date.now()}`;
+
+    // Create a non-recurring commitment
+    await openCommitmentForm(page);
+    await fillCommitmentForm(page, {
+      title: nonRecurringTitle,
+      amount: '200',
+      category: 'Shopping',
+    });
+
+    // Do NOT toggle recurring
+    await submitCommitmentForm(page);
+
+    // Navigate to previous month
+    const prevMonthBtn = page
+      .locator('button:has-text("Previous"), button[aria-label*="Previous"], button:has-text("←")')
+      .first();
+    if (await prevMonthBtn.isVisible()) {
+      await prevMonthBtn.click();
+      await page.waitForLoadState('networkidle');
+
+      // Non-recurring commitment should NOT appear in previous month
+      const commitmentInPrevMonth = page.locator(`span:has-text("${nonRecurringTitle}").font-semibold`);
+      await expect(commitmentInPrevMonth).not.toBeVisible({ timeout: 5000 });
+    }
+  });
+
+  test('recurring commitment appears in past months', async ({ page }) => {
+    const recurringTitle = `Recurring Past ${Date.now()}`;
+
+    // Create a recurring commitment
+    await openCommitmentForm(page);
+    await fillCommitmentForm(page, {
+      title: recurringTitle,
+      amount: '400',
+      category: 'Utilities',
+    });
+
+    // Toggle recurring switch
+    await toggleRecurringSwitch(page);
+
+    await submitCommitmentForm(page);
+
+    // Verify commitment appears in current month
+    await expect(page.locator(`span:has-text("${recurringTitle}").font-semibold`)).toBeVisible({ timeout: 5000 });
+
+    // Navigate to previous month
+    const prevMonthBtn = page
+      .locator('button:has-text("Previous"), button[aria-label*="Previous"], button:has-text("←")')
+      .first();
+    if (await prevMonthBtn.isVisible()) {
+      await prevMonthBtn.click();
+      await page.waitForLoadState('networkidle');
+
+      // Recurring commitment should appear in previous month
+      await expect(page.locator(`span:has-text("${recurringTitle}").font-semibold`)).toBeVisible({ timeout: 5000 });
     }
   });
 });

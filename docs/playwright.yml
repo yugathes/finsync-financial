@@ -1,0 +1,122 @@
+# name: Playwright E2E Tests
+
+# on:
+#   pull_request:
+#     branches: [main, master, develop, staging]
+#   push:
+#     branches: [main, master, develop, staging]
+#   workflow_dispatch: # Allows manual triggering from GitHub UI
+
+# jobs:
+#   e2e-tests:
+#     name: Run E2E Tests
+#     runs-on: ubuntu-latest
+#     timeout-minutes: 30
+#     permissions:
+#       contents: read
+
+#     services:
+#       postgres:
+#         image: postgres:15
+#         env:
+#           POSTGRES_USER: postgres
+#           POSTGRES_PASSWORD: postgres
+#           POSTGRES_DB: finsync_test
+#         options: >-
+#           --health-cmd pg_isready
+#           --health-interval 10s
+#           --health-timeout 5s
+#           --health-retries 5
+#         ports:
+#           - 5432:5432
+
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
+
+#       - name: Set up Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: "20"
+#           cache: "npm"
+
+#       - name: Install dependencies
+#         run: npm ci
+
+#       - name: Install Playwright browsers
+#         run: npx playwright install --with-deps chromium
+
+#       - name: Create .env.test file for CI
+#         run: |
+#           cat > .env.test << EOF
+#           BASE_URL=http://localhost:5000
+#           TEST_USER_EMAIL=testuser@yugathes.online
+#           TEST_USER_PASSWORD=testpassword
+#           EOF
+#           cat >> .env << EOF
+#           DATABASE_URL=postgresql://postgres:postgres@localhost:5432/finsync_test
+#           VITE_REACT_APP_SUPABASE_URL=${{ secrets.VITE_REACT_APP_SUPABASE_URL }}
+#           VITE_REACT_APP_SUPABASE_ANON_KEY=${{ secrets.VITE_REACT_APP_SUPABASE_ANON_KEY }}
+#           EOF
+#           echo "Created .env.test with $(wc -l < .env.test) lines"
+
+#       - name: Create auth.uid shim for CI Postgres
+#         run: |
+#           cat <<'SQL' | npx prisma db execute --stdin --schema prisma/schema.prisma
+#           CREATE SCHEMA IF NOT EXISTS auth;
+#           CREATE OR REPLACE FUNCTION auth.uid()
+#           RETURNS uuid
+#           LANGUAGE sql
+#           STABLE
+#           AS $$
+#             SELECT NULL::uuid;
+#           $$;
+#           SQL
+#         env:
+#           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finsync_test
+
+#       - name: Setup database
+#         run: npx prisma migrate deploy
+#         env:
+#           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finsync_test
+
+#       - name: Seed test account
+#         run: npm run db:seed
+#         env:
+#           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finsync_test
+#           TEST_USER_EMAIL: testuser@yugathes.online
+#           TEST_USER_PASSWORD: testpassword
+
+#       - name: Start application server
+#         run: yarn run dev &
+#         env:
+#           NODE_ENV: development
+#           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finsync_test
+#           VITE_REACT_APP_SUPABASE_URL: ${{ secrets.VITE_REACT_APP_SUPABASE_URL }}
+#           VITE_REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.VITE_REACT_APP_SUPABASE_ANON_KEY }}
+#           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+#       - name: Wait for application to be ready
+#         run: |
+#           echo "Waiting for server to start on http://localhost:5000..."
+#           timeout 60 bash -c 'until curl -f http://localhost:5000 > /dev/null 2>&1; do sleep 2; done'
+#           echo "Server is ready!"
+
+#       - name: Run Playwright E2E tests
+#         run: npm run test:e2e
+#         env:
+#           BASE_URL: http://localhost:5000
+#           TEST_USER_EMAIL: testuser@yugathes.online
+#           TEST_USER_PASSWORD: testpassword
+#           CI: true
+#           # dotenv will load these from .env.test if needed
+#           VITE_REACT_APP_SUPABASE_URL: ${{ secrets.VITE_REACT_APP_SUPABASE_URL }}
+#           VITE_REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.VITE_REACT_APP_SUPABASE_ANON_KEY }}
+
+#       - name: Upload Playwright report
+#         uses: actions/upload-artifact@v4
+#         if: always()
+#         with:
+#           name: playwright-report
+#           path: playwright-report/
+#           retention-days: 30

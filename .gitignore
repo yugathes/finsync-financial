@@ -29,3 +29,4 @@ validate-migration.sh
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+.env.test
