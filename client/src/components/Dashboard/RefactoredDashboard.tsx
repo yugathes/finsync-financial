@@ -365,6 +365,7 @@ export const RefactoredDashboard = () => {
         <BalanceCard
           income={monthlyIncome}
           commitments={totalCommitments}
+          paidAmount={paidCommitments}
           currency="MYR"
           onUpdateIncome={() => setShowIncomeModal(true)}
         />
