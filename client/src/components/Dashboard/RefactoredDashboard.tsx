@@ -3,6 +3,7 @@ import { useSession } from '../../hooks/useSession';
 import { Layout } from '@/components/Layout';
 import { BalanceCard } from './BalanceCard';
 import { CommitmentsList } from './CommitmentsList';
+import { MonthSelector } from './MonthSelector';
 import { CommitmentForm } from '../Commitments/CommitmentForm';
 import { IncomeModal } from './IncomeModal';
 import { DeleteConfirmationModal } from '../Commitments/DeleteConfirmationModal';
@@ -11,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, TrendingUp, Calendar, ChevronLeft, ChevronRight, Upload, Users, FileText } from 'lucide-react';
+import { PlusCircle, TrendingUp, Calendar, History, Upload, Users, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CommitmentWithStatus } from '../Commitments/CommitmentList';
 
@@ -58,21 +59,10 @@ export const RefactoredDashboard = () => {
 
   // Helper functions
   const getCurrentMonth = () => new Date().toISOString().slice(0, 7);
-  const formatMonth = (monthStr: string) => {
-    const [year, month] = monthStr.split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1);
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  };
 
-  const changeMonth = (direction: 'prev' | 'next') => {
-    const [year, month] = currentMonth.split('-').map(Number);
-    const date = new Date(year, month);
-    if (direction === 'prev') {
-      date.setMonth(date.getMonth() - 1);
-    } else {
-      date.setMonth(date.getMonth() + 1);
-    }
-    const newMonth = date.toISOString().slice(0, 7);
+  const isHistoricalMonth = currentMonth < getCurrentMonth();
+
+  const handleMonthChange = (newMonth: string) => {
     console.log(`[RefactoredDashboard] Changing month from ${currentMonth} to ${newMonth}`);
     setCurrentMonth(newMonth);
   };
@@ -339,26 +329,27 @@ export const RefactoredDashboard = () => {
 
         {/* Month Navigation */}
         <Card className="bg-white shadow-lg border-0">
-          <CardContent className="pb-3">
-            <div className="flex items-center justify-between">
-              <Button variant="ghost" size="sm" onClick={() => changeMonth('prev')} className="text-blue-600">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <div className="text-center">
-                <h2 className="text-lg font-semibold text-blue-800 flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  {formatMonth(currentMonth)}
-                </h2>
-                {currentMonth === getCurrentMonth() && (
-                  <span className="text-xs bg-blue-100 text-blue-700 rounded px-2 py-1 ml-2">Current Month</span>
-                )}
-              </div>
-              <Button variant="ghost" size="sm" onClick={() => changeMonth('next')} className="text-blue-600">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+          <CardContent className="pb-3 pt-4">
+            <MonthSelector
+              currentMonth={currentMonth}
+              onChange={handleMonthChange}
+            />
           </CardContent>
         </Card>
+
+        {/* Historical View Banner */}
+        {isHistoricalMonth && (
+          <div
+            className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+            data-testid="historical-banner"
+            role="status"
+          >
+            <History className="h-4 w-4 flex-shrink-0" />
+            <span>
+              <strong>Historical View</strong> — You are viewing a past month. Editing is disabled in the UI; use the current month to make changes.
+            </span>
+          </div>
+        )}
 
         {/* Balance Overview */}
         <BalanceCard
@@ -465,6 +456,7 @@ export const RefactoredDashboard = () => {
           onMarkUnpaid={handleMarkUnpaid}
           onAddNew={() => setShowCommitmentForm(true)}
           onDelete={handleDeleteCommitment}
+          isHistorical={isHistoricalMonth}
         />
 
         {/* Floating Action Button (Mobile Only) */}
