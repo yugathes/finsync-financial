@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,10 +12,8 @@ import {
 interface MonthSelectorProps {
   currentMonth: string; // YYYY-MM
   onChange: (month: string) => void;
-  /** Number of past months to show in the dropdown (default: 24) */
-  pastMonthsCount?: number;
-  /** Number of future months to show in the dropdown (default: 3) */
-  futureMonthsCount?: number;
+  /** User ID used to fetch the months that have actual data */
+  userId?: string;
 }
 
 function formatMonthLabel(monthStr: string): string {
@@ -34,33 +32,56 @@ function addMonthsToStr(monthStr: string, delta: number): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
-/** Builds the list of selectable months for the dropdown. */
-function buildMonthOptions(pastCount: number, futureCount: number): string[] {
-  const now = getCurrentMonth();
-  const options: string[] = [];
-  for (let i = pastCount; i >= 1; i--) {
-    options.push(addMonthsToStr(now, -i));
-  }
-  options.push(now);
-  for (let i = 1; i <= futureCount; i++) {
-    options.push(addMonthsToStr(now, i));
-  }
-  return options;
-}
-
 export const MonthSelector: React.FC<MonthSelectorProps> = ({
   currentMonth,
   onChange,
-  pastMonthsCount = 24,
-  futureMonthsCount = 3,
+  userId,
 }) => {
-  const monthOptions = buildMonthOptions(pastMonthsCount, futureMonthsCount);
   const now = getCurrentMonth();
   const isHistorical = currentMonth < now;
   const isFuture = currentMonth > now;
 
-  const handlePrev = () => onChange(addMonthsToStr(currentMonth, -1));
-  const handleNext = () => onChange(addMonthsToStr(currentMonth, 1));
+  // Months available in the dropdown — populated from the API.
+  // Starts with just the current month so the selector renders immediately.
+  const [availableMonths, setAvailableMonths] = useState<string[]>([now]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    fetch(`/api/commitments/user/${userId}/months-with-data`)
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch months with data');
+        return res.json() as Promise<string[]>;
+      })
+      .then(months => {
+        // Always ensure the currently-selected month is in the list so the
+        // Select value is never "dangling".
+        const merged = Array.from(new Set([...months, currentMonth, now])).sort();
+        setAvailableMonths(merged);
+      })
+      .catch(() => {
+        // On error keep the safe default — current month always visible
+        setAvailableMonths(prev =>
+          Array.from(new Set([...prev, currentMonth, now])).sort()
+        );
+      });
+    // Re-fetch whenever userId changes; currentMonth/now are stable references
+    // and should not re-trigger this effect to avoid infinite loops.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  // When the user navigates via arrows, ensure the target month is in the list
+  // even if it had no prior data (e.g. a future month the user is about to set
+  // income for).
+  const navigateTo = (month: string) => {
+    setAvailableMonths(prev =>
+      Array.from(new Set([...prev, month])).sort()
+    );
+    onChange(month);
+  };
+
+  const handlePrev = () => navigateTo(addMonthsToStr(currentMonth, -1));
+  const handleNext = () => navigateTo(addMonthsToStr(currentMonth, 1));
 
   return (
     <div className="flex items-center justify-between gap-2" data-testid="month-selector">
@@ -87,7 +108,7 @@ export const MonthSelector: React.FC<MonthSelectorProps> = ({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {monthOptions.map(m => (
+            {availableMonths.map(m => (
               <SelectItem key={m} value={m}>
                 {formatMonthLabel(m)}
                 {m === now && (
@@ -133,3 +154,4 @@ export const MonthSelector: React.FC<MonthSelectorProps> = ({
     </div>
   );
 };
+

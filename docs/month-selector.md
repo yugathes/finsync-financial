@@ -20,7 +20,13 @@ Located at `client/src/components/Dashboard/MonthSelector.tsx`.
 | Dropdown trigger | `month-dropdown-trigger` | Opens the month picker |
 | Historical badge | `historical-badge` | Shown when viewing a past month |
 
-The dropdown lists the last **24 months**, the current month (labelled "current"), and the next **3 months**. Both the `pastMonthsCount` and `futureMonthsCount` props are configurable.
+The dropdown lists **only months that have at least one data record** for the user (commitment row, commitment payment, or monthly income entry). The current calendar month is always included. Both arrow buttons remain fully functional and can navigate to any month; navigating via arrows to a month not yet in the dropdown automatically adds it to the list.
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `currentMonth` | `string` | YYYY-MM string for the active month |
+| `onChange` | `(month: string) => void` | Called when the user selects a different month |
+| `userId` | `string?` | Used to fetch months-with-data from the API |
 
 ### Historical View Banner
 
@@ -47,6 +53,24 @@ useEffect(() => { loadDashboardData(); }, [loadDashboardData]);
 ---
 
 ## Backend Query Requirements
+
+### Months with Data
+
+```
+GET /api/commitments/user/:userId/months-with-data
+```
+
+Returns a sorted (ascending) array of YYYY-MM strings for months that have at least one record in any of:
+- `commitments.start_date` owned by the user
+- `commitment_payments.month` paid by the user
+- `monthly_income.month` for the user
+
+The current calendar month is always included in the response even if no data exists yet.
+
+Example response:
+```json
+["2024-11", "2024-12", "2025-01", "2025-02", "2025-03"]
+```
 
 ### Commitments
 

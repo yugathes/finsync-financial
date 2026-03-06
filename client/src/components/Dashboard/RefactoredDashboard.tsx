@@ -333,6 +333,7 @@ export const RefactoredDashboard = () => {
             <MonthSelector
               currentMonth={currentMonth}
               onChange={handleMonthChange}
+              userId={user?.id}
             />
           </CardContent>
         </Card>

@@ -328,6 +328,58 @@ class CommitmentService {
     }
   }
 
+  /**
+   * Returns a sorted (ascending) list of YYYY-MM strings for which the user
+   * has at least one data record: a commitment row, a commitment payment, or
+   * a monthly income entry.  The current calendar month is always included.
+   */
+  async getMonthsWithData(userId: string): Promise<string[]> {
+    try {
+      const userIdStr = String(userId);
+
+      // 1. Months derived from commitment startDates owned by the user
+      const commitments = await prisma.commitment.findMany({
+        where: { userId: userIdStr },
+        select: { startDate: true, createdAt: true },
+      });
+
+      const commitmentMonths = commitments.map(c => {
+        const d = c.startDate ? new Date(c.startDate) : new Date(c.createdAt);
+        return getMonthKeyFromDate(d);
+      });
+
+      // 2. Months from commitment payments made by the user
+      const payments = await prisma.commitmentPayment.findMany({
+        where: { paidBy: userIdStr },
+        select: { month: true },
+      });
+      const paymentMonths = payments.map(p => p.month);
+
+      // 3. Months from monthly income records
+      const incomes = await prisma.monthlyIncome.findMany({
+        where: { userId: userIdStr },
+        select: { month: true },
+      });
+      const incomeMonths = incomes.map(i => i.month);
+
+      // Always include current month so the default view is always selectable
+      const now = new Date();
+      const currentMonth = getMonthKeyFromDate(now);
+
+      const allMonths = new Set<string>([
+        ...commitmentMonths,
+        ...paymentMonths,
+        ...incomeMonths,
+        currentMonth,
+      ]);
+
+      return Array.from(allMonths).sort();
+    } catch (error) {
+      console.error('Error fetching months with data:', error);
+      return [getMonthKeyFromDate(new Date())];
+    }
+  }
+
   // COMMENTED OUT: Import functionality disabled
   // async importCommitments(userId: number, commitments: any[]): Promise<Commitment[]> {
   //   try {

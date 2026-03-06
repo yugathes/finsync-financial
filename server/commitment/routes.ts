@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   getCommitmentsByUser,
   getCommitmentsForMonth,
+  getMonthsWithData,
   createCommitment,
   updateCommitment,
   deleteCommitment,
@@ -12,6 +13,7 @@ import {
 const router = Router();
 
 router.get('/user/:userId', getCommitmentsByUser);
+router.get('/user/:userId/months-with-data', getMonthsWithData);
 router.get('/user/:userId/month/:month', getCommitmentsForMonth);
 router.post('/', createCommitment);
 // COMMENTED OUT: Import route disabled
