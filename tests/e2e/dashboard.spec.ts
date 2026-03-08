@@ -519,3 +519,103 @@ test.describe('Dashboard — month selector', () => {
     }
   });
 });
+
+
+test.describe('Monthly Budget Limit', () => {
+  test.beforeEach(async ({ page }) => {
+    await login(page);
+  });
+
+  test('Set Budget button is visible on the dashboard', async ({ page }) => {
+    const btn = page.locator('[data-testid="set-budget-btn"]');
+    await expect(btn).toBeVisible({ timeout: 7000 });
+  });
+
+  test('BudgetModal opens when Set Budget is clicked', async ({ page }) => {
+    await page.click('[data-testid="set-budget-btn"]');
+    await expect(page.locator('input#budget')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('no budget warning shown when no budget limit is set', async ({ page }) => {
+    // Ensure no budget is set by checking there is no warning banner
+    await expect(page.locator('[data-testid="budget-over-alert"]')).not.toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[data-testid="budget-warning"]')).not.toBeVisible({ timeout: 3000 });
+  });
+
+  test('setting a budget limit shows the budget limit progress bar', async ({ page }) => {
+    // Open budget modal and set a large limit so no warning fires yet
+    await page.click('[data-testid="set-budget-btn"]');
+    await expect(page.locator('input#budget')).toBeVisible({ timeout: 5000 });
+    await page.fill('input#budget', '999999');
+    await page.click('button:has-text("Save Budget")');
+    await page.waitForLoadState('networkidle');
+
+    // Budget limit bar should now be visible
+    await expect(page.locator('[data-testid="budget-limit-section"]')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('warning banner shown when commitments exceed 80% of budget limit', async ({ page }) => {
+    // Add a commitment of 900
+    await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
+    await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
+    await page.fill('input#title', `Budget Warning Test ${Date.now()}`);
+    await page.fill('input#amount', '900');
+    await page.locator('button:has-text("Select a category")').first().click();
+    await page.locator('[role="option"]:has-text("Other")').first().click();
+    await page.click('button[type="submit"]');
+    await page.waitForLoadState('networkidle');
+
+    // Set a budget limit of 1000 so 900 = 90% → warning
+    await page.click('[data-testid="set-budget-btn"]');
+    await expect(page.locator('input#budget')).toBeVisible({ timeout: 5000 });
+    await page.fill('input#budget', '1000');
+    await page.click('button:has-text("Save Budget")');
+    await page.waitForLoadState('networkidle');
+
+    // Warning banner must appear (commitments = 90% of budget)
+    await expect(page.locator('[data-testid="budget-warning"]')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('[data-testid="budget-over-alert"]')).not.toBeVisible({ timeout: 3000 });
+  });
+
+  test('over-budget alert shown when commitments exceed budget limit', async ({ page }) => {
+    // Add a commitment of 1200
+    await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
+    await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
+    await page.fill('input#title', `Over Budget Test ${Date.now()}`);
+    await page.fill('input#amount', '1200');
+    await page.locator('button:has-text("Select a category")').first().click();
+    await page.locator('[role="option"]:has-text("Other")').first().click();
+    await page.click('button[type="submit"]');
+    await page.waitForLoadState('networkidle');
+
+    // Set budget lower than total commitments
+    await page.click('[data-testid="set-budget-btn"]');
+    await expect(page.locator('input#budget')).toBeVisible({ timeout: 5000 });
+    await page.fill('input#budget', '100');
+    await page.click('button:has-text("Save Budget")');
+    await page.waitForLoadState('networkidle');
+
+    // Over-budget alert must appear
+    await expect(page.locator('[data-testid="budget-over-alert"]')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('removing budget limit hides warning indicators', async ({ page }) => {
+    // Set a budget that triggers a warning first
+    await page.click('[data-testid="set-budget-btn"]');
+    await expect(page.locator('input#budget')).toBeVisible({ timeout: 5000 });
+    await page.fill('input#budget', '1');
+    await page.click('button:has-text("Save Budget")');
+    await page.waitForLoadState('networkidle');
+
+    // Now remove the limit
+    await page.click('[data-testid="set-budget-btn"]');
+    await expect(page.locator('button:has-text("Remove Limit")')).toBeVisible({ timeout: 5000 });
+    await page.click('button:has-text("Remove Limit")');
+    await page.waitForLoadState('networkidle');
+
+    // Neither warning nor alert should be visible
+    await expect(page.locator('[data-testid="budget-over-alert"]')).not.toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[data-testid="budget-warning"]')).not.toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[data-testid="budget-limit-section"]')).not.toBeVisible({ timeout: 3000 });
+  });
+});

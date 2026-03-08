@@ -6,6 +6,7 @@ import { CommitmentsList } from './CommitmentsList';
 import { MonthSelector } from './MonthSelector';
 import { CommitmentForm } from '../Commitments/CommitmentForm';
 import { IncomeModal } from './IncomeModal';
+import { BudgetModal } from './BudgetModal';
 import { DeleteConfirmationModal } from '../Commitments/DeleteConfirmationModal';
 import { FloatingActionButton } from '../ui/FloatingActionButton';
 import { Button } from '@/components/ui/button';
@@ -45,7 +46,9 @@ export const RefactoredDashboard = () => {
   // State
   const [monthlyIncome, setMonthlyIncome] = useState<number>(0);
   const [commitments, setCommitments] = useState<any[]>([]);
+  const [budgetLimit, setBudgetLimit] = useState<number | null>(null);
   const [showIncomeModal, setShowIncomeModal] = useState(false);
+  const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [showCommitmentForm, setShowCommitmentForm] = useState(false);
   // COMMENTED OUT: Import functionality disabled
   // const [showImportWizard, setShowImportWizard] = useState(false);
@@ -109,6 +112,18 @@ export const RefactoredDashboard = () => {
 
       setMonthlyIncome(incomeAmount);
       setCommitments(commitmentsData || []);
+
+      // Load budget limit for this month – 404 means no limit set
+      let budgetAmount: number | null = null;
+      try {
+        const budgetData = await apiRequest(`/api/budget/${user.id}/${currentMonth}`);
+        budgetAmount = budgetData?.budgetLimit ? parseFloat(budgetData.budgetLimit) : null;
+      } catch (error: any) {
+        if (!error.message?.includes('not found') && !error.message?.includes('404')) {
+          throw error;
+        }
+      }
+      setBudgetLimit(budgetAmount);
     } catch (error: any) {
       console.error('Error loading dashboard data:', error);
       toast({
@@ -125,6 +140,40 @@ export const RefactoredDashboard = () => {
   useEffect(() => {
     loadDashboardData();
   }, [loadDashboardData]);
+
+  // Budget management
+  const handleUpdateBudget = async (limit: number | null) => {
+    if (!user?.id) return;
+    try {
+      if (limit === null) {
+        // Remove budget limit
+        try {
+          await apiRequest(`/api/budget/${user.id}/${currentMonth}`, { method: 'DELETE' });
+        } catch (error: any) {
+          // 404 means no budget was set – that's fine
+          if (!error.message?.includes('not found') && !error.message?.includes('404')) {
+            throw error;
+          }
+        }
+        setBudgetLimit(null);
+        setShowBudgetModal(false);
+        toast({ title: 'Budget limit removed', description: 'No budget limit set for this month.' });
+      } else {
+        await apiRequest('/api/budget', {
+          method: 'POST',
+          body: JSON.stringify({ userId: user.id, month: currentMonth, budgetLimit: limit.toString() }),
+        });
+        setBudgetLimit(limit);
+        setShowBudgetModal(false);
+        toast({
+          title: 'Budget limit updated!',
+          description: `Monthly budget set to MYR ${limit.toLocaleString()}`,
+        });
+      }
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Failed to update budget', variant: 'destructive' });
+    }
+  };
 
   // Income management
   const handleUpdateIncome = async (income: number) => {
@@ -399,6 +448,8 @@ export const RefactoredDashboard = () => {
           paidAmount={paidCommitments}
           currency="MYR"
           onUpdateIncome={() => setShowIncomeModal(true)}
+          budgetLimit={budgetLimit}
+          onUpdateBudget={() => setShowBudgetModal(true)}
         />
 
         {/* Quick Stats */}
@@ -516,6 +567,14 @@ export const RefactoredDashboard = () => {
           currency="MYR"
           onSubmit={handleUpdateIncome}
           onCancel={() => setShowIncomeModal(false)}
+        />
+
+        <BudgetModal
+          isVisible={showBudgetModal}
+          currentBudget={budgetLimit}
+          currency="MYR"
+          onSubmit={handleUpdateBudget}
+          onCancel={() => setShowBudgetModal(false)}
         />
 
         {/* COMMENTED OUT: Import functionality disabled */}
