@@ -6,6 +6,7 @@ import incomeRoutes from './income/routes';
 import paymentRoutes from './payment/routes';
 import dashboardRoutes from './dashboard/routes';
 import groupRoutes from './group/routes';
+import budgetRoutes from './budget/routes';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Health check endpoint for PM2 monitoring
@@ -33,6 +34,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', paymentRoutes);
   // Group routes
   app.use('/api/groups', groupRoutes);
+  // Budget routes
+  app.use('/api/budget', budgetRoutes);
   // Dashboard routes
   app.use('/api/dashboard', dashboardRoutes);
   // Return the HTTP server instance for use in index.ts

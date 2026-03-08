@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import CommitmentService from '../commitment/services';
 import IncomeService from '../income/services';
+import BudgetService from '../budget/services';
 export async function getDashboardSummary(req: Request, res: Response) {
   try {
     const getCurrentMonth = () => new Date().toISOString().slice(0, 7);
@@ -8,12 +9,14 @@ export async function getDashboardSummary(req: Request, res: Response) {
     console.log('Fetching dashboard summary for user:', userId);
     const month = req.params.month || getCurrentMonth();
     const income = await IncomeService.getMonthlyIncome(userId, month);
+    const budget = await BudgetService.getMonthlyBudget(userId, month);
     const commitments = await CommitmentService.getCommitmentsForMonth(userId, month);
     const totalCommitments = commitments.reduce((sum, c) => sum + parseFloat(`${c.amount}`), 0);
     const paidCommitments = commitments
       .filter(c => c.isPaid)
       .reduce((sum, c) => sum + parseFloat(c.amountPaid || `${c.amount}`), 0);
     const unpaidCommitments = commitments.filter(c => !c.isPaid);
+    const budgetLimit = budget ? parseFloat(`${budget.budgetLimit}`) : null;
     const summary = {
       month,
       income: income ? parseFloat(`${income.amount}`) : 0,
@@ -24,6 +27,7 @@ export async function getDashboardSummary(req: Request, res: Response) {
       commitments: commitments.length,
       unpaidCount: unpaidCommitments.length,
       commitmentsList: commitments,
+      budgetLimit,
     };
     res.json(summary);
   } catch (error: any) {

@@ -85,7 +85,13 @@ async function cleanupTestData() {
     });
     console.log(`  ✓ Deleted ${deletedIncomes.count} monthly income records`);
 
-    // 6. Reset user's monthly income to default
+    // 6. Delete monthly budget records
+    const deletedBudgets = await prisma.monthlyBudget.deleteMany({
+      where: { userId: testUser.id },
+    });
+    console.log(`  ✓ Deleted ${deletedBudgets.count} monthly budget records`);
+
+    // 7. Reset user's monthly income to default
     await prisma.user.update({
       where: { id: testUser.id },
       data: { monthlyIncome: defaultIncome },

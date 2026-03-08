@@ -17,6 +17,7 @@ model User {
 
   // Relations
   monthlyIncomes     MonthlyIncome[]
+  monthlyBudgets     MonthlyBudget[]
   commitments        Commitment[]
   commitmentPayments CommitmentPayment[] @relation("PaymentsByUser")
   ownedGroups        Group[]             @relation("GroupOwner")
@@ -110,4 +111,20 @@ model GroupMember {
 
   @@unique([groupId, userId])
   @@map("group_members")
+}
+
+model MonthlyBudget {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  month       String // e.g., '2025-07'
+  budgetLimit Decimal  @map("budget_limit") @db.Decimal(10, 2)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, month])
+  @@index([userId, month])
+  @@map("monthly_budget")
 }
