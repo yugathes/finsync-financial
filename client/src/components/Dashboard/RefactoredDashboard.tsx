@@ -163,7 +163,8 @@ export const RefactoredDashboard = () => {
             throw error;
           }
         }
-        setBudgetLimit(null);
+        // Reload dashboard data to ensure warnings are removed with fresh data
+        await loadDashboardData();
         setShowBudgetModal(false);
         toast({ title: 'Budget limit removed', description: 'No budget limit set for this month.' });
       } else {
@@ -171,7 +172,8 @@ export const RefactoredDashboard = () => {
           method: 'POST',
           body: JSON.stringify({ userId: user.id, month: currentMonth, budgetLimit: limit.toString() }),
         });
-        setBudgetLimit(limit);
+        // Reload dashboard data to ensure warnings are displayed with fresh data
+        await loadDashboardData();
         setShowBudgetModal(false);
         toast({
           title: 'Budget limit updated!',

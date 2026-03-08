@@ -11,6 +11,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   workers: 1,
   reporter: 'list',
+  globalSetup: './scripts/cleanup-test-data.ts',
   globalTeardown: './scripts/cleanup-test-data.ts',
   use: {
     baseURL: process.env.BASE_URL ?? 'http://localhost:3000',

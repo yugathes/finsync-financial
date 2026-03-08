@@ -556,6 +556,9 @@ test.describe('Monthly Budget Limit', () => {
   });
 
   test('warning banner shown when commitments exceed 80% of budget limit', async ({ page }) => {
+    // Get current total commitments to calculate appropriate budget
+    const currentTotal = await getTotalCommitmentsAmount(page);
+    
     // Add a commitment of 900
     await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
     await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
@@ -566,10 +569,14 @@ test.describe('Monthly Budget Limit', () => {
     await page.click('button[type="submit"]');
     await page.waitForLoadState('networkidle');
 
-    // Set a budget limit of 1000 so 900 = 90% → warning
+    // Calculate new total and set budget so we're at 90% (trigger warning at 80%)
+    const newTotal = currentTotal + 900;
+    const budgetLimit = Math.ceil(newTotal / 0.9); // Set budget so current total is 90%
+    
+    // Set the calculated budget limit
     await page.click('[data-testid="set-budget-btn"]');
     await expect(page.locator('input#budget')).toBeVisible({ timeout: 5000 });
-    await page.fill('input#budget', '1000');
+    await page.fill('input#budget', budgetLimit.toString());
     await page.click('button:has-text("Save Budget")');
     await page.waitForLoadState('networkidle');
 
@@ -579,6 +586,9 @@ test.describe('Monthly Budget Limit', () => {
   });
 
   test('over-budget alert shown when commitments exceed budget limit', async ({ page }) => {
+    // Get current total commitments
+    const currentTotal = await getTotalCommitmentsAmount(page);
+    
     // Add a commitment of 1200
     await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
     await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
@@ -589,10 +599,14 @@ test.describe('Monthly Budget Limit', () => {
     await page.click('button[type="submit"]');
     await page.waitForLoadState('networkidle');
 
+    // Calculate new total and set budget lower to trigger over-budget alert
+    const newTotal = currentTotal + 1200;
+    const budgetLimit = Math.floor(newTotal * 0.5); // Set budget at 50% of total
+    
     // Set budget lower than total commitments
     await page.click('[data-testid="set-budget-btn"]');
     await expect(page.locator('input#budget')).toBeVisible({ timeout: 5000 });
-    await page.fill('input#budget', '100');
+    await page.fill('input#budget', budgetLimit.toString());
     await page.click('button:has-text("Save Budget")');
     await page.waitForLoadState('networkidle');
 
