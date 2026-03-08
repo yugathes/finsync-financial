@@ -42,7 +42,7 @@ model MonthlyIncome {
 model Commitment {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
   userId     String    @map("user_id") @db.Uuid
-  type       String // 'static' | 'dynamic'
+  type       String // 'commitment' | 'expenses'
   title      String
   category   String
   amount     Decimal   @db.Decimal(10, 2)

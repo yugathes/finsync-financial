@@ -3,6 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Users, Crown, ArrowLeft, UserPlus, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Group } from './GroupList';
 import { CommitmentList, CommitmentWithStatus } from '../Commitments/CommitmentList';
 
@@ -31,6 +41,19 @@ export const GroupDetail: React.FC<GroupDetailProps> = ({
 }) => {
   const isOwner = group.ownerId === currentUserId;
   const members = group.members || [];
+
+  const [memberToRemove, setMemberToRemove] = useState<{ id: string; email: string } | null>(null);
+
+  const handleRemoveClick = (memberId: string, memberEmail: string) => {
+    setMemberToRemove({ id: memberId, email: memberEmail });
+  };
+
+  const handleConfirmRemove = () => {
+    if (memberToRemove) {
+      onRemoveMember(memberToRemove.id);
+      setMemberToRemove(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -113,7 +136,7 @@ export const GroupDetail: React.FC<GroupDetailProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => onRemoveMember(member.id)}
+                      onClick={() => handleRemoveClick(member.id, member.user.email)}
                       className="text-red-500 hover:text-red-700"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -140,6 +163,27 @@ export const GroupDetail: React.FC<GroupDetailProps> = ({
           onMarkUnpaid={onMarkUnpaid}
         />
       </div>
+
+      {/* Member removal confirmation dialog */}
+      <AlertDialog open={!!memberToRemove} onOpenChange={(open) => { if (!open) setMemberToRemove(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Member</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove <strong>{memberToRemove?.email}</strong> from this group? They will lose access to all shared commitments.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmRemove}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Remove Member
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -366,12 +366,7 @@ class CommitmentService {
       const now = new Date();
       const currentMonth = getMonthKeyFromDate(now);
 
-      const allMonths = new Set<string>([
-        ...commitmentMonths,
-        ...paymentMonths,
-        ...incomeMonths,
-        currentMonth,
-      ]);
+      const allMonths = new Set<string>([...commitmentMonths, ...paymentMonths, ...incomeMonths, currentMonth]);
 
       return Array.from(allMonths).sort();
     } catch (error) {
@@ -388,7 +383,7 @@ class CommitmentService {
   //         return await prisma.commitment.create({
   //           data: {
   //             userId: String(userId),
-  //             type: commitment.type || 'static',
+  //             type: commitment.type || 'commitment',
   //             title: commitment.title,
   //             category: commitment.category,
   //             amount: commitment.amount,
