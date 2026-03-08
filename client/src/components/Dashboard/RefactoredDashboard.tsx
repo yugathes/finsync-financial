@@ -157,7 +157,7 @@ export const RefactoredDashboard = () => {
   const handleAddCommitment = async (newCommitment: {
     title: string;
     amount: number;
-    type: 'static' | 'dynamic';
+    type: 'commitment' | 'expenses';
     category: string;
   }) => {
     if (!user?.id) return;
@@ -266,46 +266,43 @@ export const RefactoredDashboard = () => {
       setShowDeleteModal(false);
       setCommitmentToDelete(null);
 
-      sonnerToast(
-        deletedScope === 'single' ? 'Commitment removed for this month' : 'Commitment deleted permanently',
-        {
-          description: `"${deletedCommitment.title}" has been deleted.`,
-          duration: 5000,
-          action: {
-            label: 'Undo',
-            // Sonner onClick is (event: MouseEvent) => void — use .then() instead of async/await
-            onClick: () => {
-              apiRequest('/api/commitments', {
-                method: 'POST',
-                body: JSON.stringify({
-                  userId: user?.id,
-                  title: deletedCommitment.title,
-                  amount: deletedCommitment.amount,
-                  type: deletedCommitment.type,
-                  category: deletedCommitment.category,
-                  recurring: deletedCommitment.recurring,
-                  shared: deletedCommitment.shared,
-                  startDate: deletedCommitment.startDate,
-                }),
-              })
-                .then(() => loadDashboardData())
-                .then(() => {
-                  toast({
-                    title: 'Commitment restored!',
-                    description: `"${deletedCommitment.title}" has been restored.`,
-                  });
-                })
-                .catch((undoError: any) => {
-                  toast({
-                    title: 'Undo failed',
-                    description: undoError.message || 'Could not restore the commitment.',
-                    variant: 'destructive',
-                  });
+      sonnerToast(deletedScope === 'single' ? 'Commitment removed for this month' : 'Commitment deleted permanently', {
+        description: `"${deletedCommitment.title}" has been deleted.`,
+        duration: 5000,
+        action: {
+          label: 'Undo',
+          // Sonner onClick is (event: MouseEvent) => void — use .then() instead of async/await
+          onClick: () => {
+            apiRequest('/api/commitments', {
+              method: 'POST',
+              body: JSON.stringify({
+                userId: user?.id,
+                title: deletedCommitment.title,
+                amount: deletedCommitment.amount,
+                type: deletedCommitment.type,
+                category: deletedCommitment.category,
+                recurring: deletedCommitment.recurring,
+                shared: deletedCommitment.shared,
+                startDate: deletedCommitment.startDate,
+              }),
+            })
+              .then(() => loadDashboardData())
+              .then(() => {
+                toast({
+                  title: 'Commitment restored!',
+                  description: `"${deletedCommitment.title}" has been restored.`,
                 });
-            },
+              })
+              .catch((undoError: any) => {
+                toast({
+                  title: 'Undo failed',
+                  description: undoError.message || 'Could not restore the commitment.',
+                  variant: 'destructive',
+                });
+              });
           },
         },
-      );
+      });
 
       await loadDashboardData();
     } catch (error: any) {
@@ -376,11 +373,7 @@ export const RefactoredDashboard = () => {
         {/* Month Navigation */}
         <Card className="bg-white shadow-lg border-0">
           <CardContent className="pb-3 pt-4">
-            <MonthSelector
-              currentMonth={currentMonth}
-              onChange={handleMonthChange}
-              userId={user?.id}
-            />
+            <MonthSelector currentMonth={currentMonth} onChange={handleMonthChange} userId={user?.id} />
           </CardContent>
         </Card>
 
@@ -393,7 +386,8 @@ export const RefactoredDashboard = () => {
           >
             <History className="h-4 w-4 flex-shrink-0" />
             <span>
-              <strong>Historical View</strong> — You are viewing a past month. Editing is disabled in the UI; use the current month to make changes.
+              <strong>Historical View</strong> — You are viewing a past month. Editing is disabled in the UI; use the
+              current month to make changes.
             </span>
           </div>
         )}

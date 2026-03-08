@@ -261,10 +261,11 @@ test.describe('Dashboard — spending progress bar & % indicator', () => {
 
   test('progress bar and % indicator are present on the dashboard', async ({ page }) => {
     // The spending progress bar element should be rendered in the DOM
+    // Note: It may have 0% width when no payments exist, so check it's attached
     const progressBar = page.locator('[data-testid="spending-progress-bar"]');
-    await expect(progressBar).toBeVisible({ timeout: 7000 });
+    await expect(progressBar).toBeAttached({ timeout: 7000 });
 
-    // The spending percent indicator should be rendered
+    // The spending percent indicator should be rendered and visible
     const percentLabel = page.locator('[data-testid="spending-percent"]');
     await expect(percentLabel).toBeVisible({ timeout: 5000 });
 
@@ -274,7 +275,7 @@ test.describe('Dashboard — spending progress bar & % indicator', () => {
   });
 
   test('percent indicator shows 0.0% when no commitments are paid', async ({ page }) => {
-    // Add a static commitment and do NOT mark it as paid
+    // Add a commitment commitment and do NOT mark it as paid
     await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
     await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
     const testTitle = `Progress Zero Test ${Date.now()}`;
@@ -295,7 +296,7 @@ test.describe('Dashboard — spending progress bar & % indicator', () => {
   });
 
   test('percent indicator increases after marking a commitment as paid', async ({ page }) => {
-    // Create a static commitment
+    // Create a commitment commitment
     await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
     await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
     const testTitle = `Progress Paid Test ${Date.now()}`;
@@ -353,41 +354,42 @@ test.describe('Dashboard — commitment type visual separation', () => {
     await login(page);
   });
 
-  test('static commitment appears under the Static group heading', async ({ page }) => {
+  test('Commitment commitment appears under the commitment group heading', async ({ page }) => {
     await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
     await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
-    const testTitle = `Static Group Test ${Date.now()}`;
+    const testTitle = `Commitment Group Test ${Date.now()}`;
     await page.fill('input#title', testTitle);
     await page.fill('input#amount', '150');
-    // Static is the default type; just select a category
+    // Commitment is the default type; just select a category
     await page.locator('button:has-text("Select a category")').first().click();
     await page.locator('[role="option"]:has-text("Other")').first().click();
     await page.click('button[type="submit"]');
     await page.waitForLoadState('networkidle');
 
-    // The Static group header should be visible within the Pending section
-    const staticGroup = page
+    // The Commitments group header should be visible within the Pending section
+    // Note: unpaid commitments use the label "Commitments" (plural)
+    const commitmentGroup = page
       .locator('[data-testid="section-pending"]')
-      .locator('[data-testid="commitment-group-static"]');
-    await expect(staticGroup).toBeVisible({ timeout: 5000 });
+      .locator('[data-testid="commitment-group-commitments"]');
+    await expect(commitmentGroup).toBeVisible({ timeout: 5000 });
 
     // The commitment we created should be inside that group
-    await expect(staticGroup.locator(`span:has-text("${testTitle}")`)).toBeVisible({ timeout: 5000 });
+    await expect(commitmentGroup.locator(`span:has-text("${testTitle}")`)).toBeVisible({ timeout: 5000 });
   });
 
-  test('dynamic commitment appears under the Dynamic group heading', async ({ page }) => {
+  test('expenses commitment appears under the Expenses group heading', async ({ page }) => {
     await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
     await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
-    const testTitle = `Dynamic Group Test ${Date.now()}`;
+    const testTitle = `Expenses Group Test ${Date.now()}`;
     await page.fill('input#title', testTitle);
     await page.fill('input#amount', '250');
 
-    // Switch to Dynamic type if a toggle/radio exists
-    const dynamicOption = page
-      .locator('label:has-text("Dynamic"), button:has-text("Dynamic"), [value="dynamic"]')
+    // Switch to Expense type if a toggle/radio exists
+    const expenseOption = page
+      .locator('label:has-text("Expense"), button:has-text("Expense"), [value="expense"]')
       .first();
-    if (await dynamicOption.isVisible({ timeout: 1000 }).catch(() => false)) {
-      await dynamicOption.click();
+    if (await expenseOption.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await expenseOption.click();
     }
 
     await page.locator('button:has-text("Select a category")').first().click();
@@ -395,7 +397,7 @@ test.describe('Dashboard — commitment type visual separation', () => {
     await page.click('button[type="submit"]');
     await page.waitForLoadState('networkidle');
 
-    // Either the Dynamic group OR the Static group should be visible (depends on whether type changed)
+    // Either the Expenses group OR the Commitment group should be visible (depends on whether type changed)
     const pendingSection = page.locator('[data-testid="section-pending"]');
     await expect(pendingSection).toBeVisible({ timeout: 5000 });
 

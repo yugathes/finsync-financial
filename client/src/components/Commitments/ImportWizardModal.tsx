@@ -20,11 +20,7 @@ interface ImportWizardModalProps {
   onImport: (commitments: ImportCommitment[]) => Promise<void>;
 }
 
-export const ImportWizardModal: React.FC<ImportWizardModalProps> = ({
-  isOpen,
-  onClose,
-  onImport,
-}) => {
+export const ImportWizardModal: React.FC<ImportWizardModalProps> = ({ isOpen, onClose, onImport }) => {
   const [step, setStep] = useState<'upload' | 'preview' | 'complete'>('upload');
   const [commitments, setCommitments] = useState<ImportCommitment[]>([]);
   const [loading, setLoading] = useState(false);
@@ -37,10 +33,10 @@ export const ImportWizardModal: React.FC<ImportWizardModalProps> = ({
     setError(null);
     const reader = new FileReader();
 
-    reader.onload = (event) => {
+    reader.onload = event => {
       try {
         const text = event.target?.result as string;
-        
+
         if (file.name.endsWith('.json')) {
           // Parse JSON
           const data = JSON.parse(text);
@@ -51,7 +47,7 @@ export const ImportWizardModal: React.FC<ImportWizardModalProps> = ({
           // Parse CSV
           const lines = text.split('\n').filter(line => line.trim());
           const headers = lines[0].split(',').map(h => h.trim());
-          
+
           const parsed = lines.slice(1).map(line => {
             const values = line.split(',').map(v => v.trim());
             const obj: any = {};
@@ -59,7 +55,7 @@ export const ImportWizardModal: React.FC<ImportWizardModalProps> = ({
               obj[header] = values[i];
             });
             return {
-              type: obj.type || 'static',
+              type: obj.type || 'commitment',
               title: obj.title,
               category: obj.category,
               amount: parseFloat(obj.amount),
@@ -68,7 +64,7 @@ export const ImportWizardModal: React.FC<ImportWizardModalProps> = ({
               createdAt: obj.createdAt,
             };
           });
-          
+
           setCommitments(parsed);
           setStep('preview');
         } else {
@@ -89,7 +85,7 @@ export const ImportWizardModal: React.FC<ImportWizardModalProps> = ({
   const handleImport = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       await onImport(commitments);
       setStep('complete');
@@ -130,33 +126,24 @@ export const ImportWizardModal: React.FC<ImportWizardModalProps> = ({
                 <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <div className="space-y-2">
                   <p className="text-lg font-medium">Upload your file</p>
-                  <p className="text-sm text-gray-600">
-                    Support for CSV and JSON formats
-                  </p>
+                  <p className="text-sm text-gray-600">Support for CSV and JSON formats</p>
                 </div>
                 <label className="mt-4 inline-block">
-                  <input
-                    type="file"
-                    accept=".csv,.json"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                  />
+                  <input type="file" accept=".csv,.json" onChange={handleFileUpload} className="hidden" />
                   <Button className="bg-blue-600 hover:bg-blue-700" asChild>
                     <span>Select File</span>
                   </Button>
                 </label>
               </div>
-              
+
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                  {error}
-                </div>
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
               )}
 
               <div className="text-sm text-gray-600">
                 <p className="font-medium mb-2">Required CSV columns:</p>
                 <ul className="list-disc list-inside space-y-1 ml-2">
-                  <li>type (static/dynamic)</li>
+                  <li>type (commitment/expenses)</li>
                   <li>title</li>
                   <li>category</li>
                   <li>amount</li>
@@ -175,11 +162,7 @@ export const ImportWizardModal: React.FC<ImportWizardModalProps> = ({
                     {commitments.length} commitment{commitments.length !== 1 ? 's' : ''} found
                   </p>
                 </div>
-                <Button
-                  variant="outline"
-                  onClick={() => setStep('upload')}
-                  disabled={loading}
-                >
+                <Button variant="outline" onClick={() => setStep('upload')} disabled={loading}>
                   Back
                 </Button>
               </div>
@@ -201,9 +184,7 @@ export const ImportWizardModal: React.FC<ImportWizardModalProps> = ({
                         <td className="p-2">{c.category}</td>
                         <td className="p-2">{c.amount}</td>
                         <td className="p-2">
-                          <Badge variant={c.type === 'static' ? 'secondary' : 'outline'}>
-                            {c.type}
-                          </Badge>
+                          <Badge variant={c.type === 'commitment' ? 'secondary' : 'outline'}>{c.type}</Badge>
                         </td>
                       </tr>
                     ))}
@@ -212,24 +193,14 @@ export const ImportWizardModal: React.FC<ImportWizardModalProps> = ({
               </div>
 
               {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                  {error}
-                </div>
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
               )}
 
               <div className="flex gap-2 justify-end">
-                <Button
-                  variant="outline"
-                  onClick={handleClose}
-                  disabled={loading}
-                >
+                <Button variant="outline" onClick={handleClose} disabled={loading}>
                   Cancel
                 </Button>
-                <Button
-                  onClick={handleImport}
-                  disabled={loading}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
+                <Button onClick={handleImport} disabled={loading} className="bg-blue-600 hover:bg-blue-700">
                   {loading ? 'Importing...' : 'Import Commitments'}
                 </Button>
               </div>

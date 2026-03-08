@@ -5,23 +5,29 @@ This project has been migrated from Drizzle ORM to Prisma ORM for better type sa
 ## Setup
 
 ### Installation
+
 Prisma is already installed as a dependency:
+
 ```bash
 npm install prisma @prisma/client
 ```
 
 ### Environment Variables
+
 Add the following to your `.env` file:
+
 ```
 DATABASE_URL=postgresql://username:password@localhost:5432/database_name
 ```
 
 ### Generate Prisma Client
+
 ```bash
 npm run db:generate
 ```
 
 ### Database Operations
+
 ```bash
 # Push schema changes to database
 npm run db:push
@@ -38,6 +44,7 @@ npm run db:studio
 The database schema is defined in `prisma/schema.prisma` with the following models:
 
 ### User
+
 - `id`: UUID (Primary Key)
 - `email`: String (Unique)
 - `password`: String (Optional)
@@ -46,6 +53,7 @@ The database schema is defined in `prisma/schema.prisma` with the following mode
 - `updatedAt`: DateTime
 
 ### MonthlyIncome
+
 - `id`: UUID (Primary Key)
 - `userId`: UUID (Foreign Key to User)
 - `month`: String (e.g., '2025-07')
@@ -54,9 +62,10 @@ The database schema is defined in `prisma/schema.prisma` with the following mode
 - `updatedAt`: DateTime
 
 ### Commitment
+
 - `id`: UUID (Primary Key)
 - `userId`: UUID (Foreign Key to User)
-- `type`: String ('static' | 'dynamic')
+- `type`: String ('commitment' | 'expenses')
 - `title`: String
 - `category`: String
 - `amount`: Decimal
@@ -68,6 +77,7 @@ The database schema is defined in `prisma/schema.prisma` with the following mode
 - `updatedAt`: DateTime
 
 ### CommitmentPayment
+
 - `id`: UUID (Primary Key)
 - `commitmentId`: UUID (Foreign Key to Commitment)
 - `month`: String (e.g., '2025-07')
@@ -79,33 +89,35 @@ The database schema is defined in `prisma/schema.prisma` with the following mode
 ## Common Queries
 
 ### Users
+
 ```typescript
 // Find user by ID
 const user = await prisma.user.findUnique({
-  where: { id: userId }
+  where: { id: userId },
 });
 
 // Create user
 const user = await prisma.user.create({
   data: {
     email: 'user@example.com',
-    password: 'hashedPassword'
-  }
+    password: 'hashedPassword',
+  },
 });
 
 // Update user
 const user = await prisma.user.update({
   where: { id: userId },
-  data: { monthlyIncome: '5000' }
+  data: { monthlyIncome: '5000' },
 });
 ```
 
 ### Commitments
+
 ```typescript
 // Get user's commitments
 const commitments = await prisma.commitment.findMany({
   where: { userId: userId },
-  orderBy: { createdAt: 'desc' }
+  orderBy: { createdAt: 'desc' },
 });
 
 // Get commitments with payments for a specific month
@@ -113,25 +125,26 @@ const commitments = await prisma.commitment.findMany({
   where: { userId: userId },
   include: {
     payments: {
-      where: { month: '2025-07' }
-    }
-  }
+      where: { month: '2025-07' },
+    },
+  },
 });
 
 // Create commitment
 const commitment = await prisma.commitment.create({
   data: {
     userId: userId,
-    type: 'static',
+    type: 'commitment',
     title: 'Rent',
     category: 'Housing',
     amount: '1200',
-    recurring: true
-  }
+    recurring: true,
+  },
 });
 ```
 
 ### Payments
+
 ```typescript
 // Mark commitment as paid
 const payment = await prisma.commitmentPayment.create({
@@ -139,27 +152,29 @@ const payment = await prisma.commitmentPayment.create({
     commitmentId: commitmentId,
     month: '2025-07',
     paidBy: userId,
-    amountPaid: '1200'
-  }
+    amountPaid: '1200',
+  },
 });
 
 // Get payments for a month
 const payments = await prisma.commitmentPayment.findMany({
   where: {
     paidBy: userId,
-    month: '2025-07'
-  }
+    month: '2025-07',
+  },
 });
 ```
 
 ## Best Practices
 
 ### Type Safety
+
 - Use TypeScript types from `lib/types.ts`
 - Always handle potential null values from database queries
 - Use proper decimal handling for financial amounts
 
 ### Error Handling
+
 ```typescript
 try {
   const user = await prisma.user.create({ data: userData });
@@ -171,9 +186,11 @@ try {
 ```
 
 ### Transactions
+
 For operations that involve multiple models:
+
 ```typescript
-const result = await prisma.$transaction(async (prisma) => {
+const result = await prisma.$transaction(async prisma => {
   const commitment = await prisma.commitment.create({ data: commitmentData });
   const payment = await prisma.commitmentPayment.create({ data: paymentData });
   return { commitment, payment };
@@ -181,15 +198,17 @@ const result = await prisma.$transaction(async (prisma) => {
 ```
 
 ### Relations
+
 Always use proper relation handling:
+
 ```typescript
 // Include related data
 const userWithCommitments = await prisma.user.findUnique({
   where: { id: userId },
   include: {
     commitments: true,
-    monthlyIncomes: true
-  }
+    monthlyIncomes: true,
+  },
 });
 ```
 
@@ -204,19 +223,25 @@ const userWithCommitments = await prisma.user.findUnique({
 ## Troubleshooting
 
 ### Generate Client Issues
+
 If you can't generate the Prisma client due to network restrictions:
+
 1. Ensure DATABASE_URL is properly configured
 2. Check network connectivity to Prisma binaries
 3. Use `npx prisma generate --help` for options
 
 ### Database Connection
+
 Ensure your DATABASE_URL follows the correct PostgreSQL format:
+
 ```
 postgresql://USER:PASSWORD@HOST:PORT/DATABASE
 ```
 
 ### Type Errors
+
 If you encounter type errors:
+
 1. Run `npm run db:generate` to regenerate types
 2. Restart your TypeScript server
 3. Check that imports are correct in `lib/types.ts`

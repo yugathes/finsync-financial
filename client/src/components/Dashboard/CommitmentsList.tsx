@@ -7,7 +7,7 @@ interface Commitment {
   id: string;
   title: string;
   amount: number;
-  type: 'static' | 'dynamic';
+  type: 'commitment' | 'expenses';
   category: string;
   isPaid: boolean;
   amountPaid?: string;
@@ -27,12 +27,12 @@ interface CommitmentsListProps {
   isHistorical?: boolean;
 }
 
-/** Group a list of commitments into static, dynamic, and shared buckets. */
+/** Group a list of commitments into commitment, expenses, and shared buckets. */
 function groupByType(items: Commitment[]) {
   return {
     shared: items.filter(c => c.shared),
-    static: items.filter(c => !c.shared && c.type === 'static'),
-    dynamic: items.filter(c => !c.shared && c.type === 'dynamic'),
+    commitment: items.filter(c => !c.shared && c.type === 'commitment'),
+    expenses: items.filter(c => !c.shared && c.type === 'expenses'),
   };
 }
 
@@ -50,13 +50,25 @@ interface TypeGroupProps {
 }
 
 /** Renders a labelled group of commitment items of the same type. */
-const TypeGroup = ({ label, icon, items, currency, onMarkPaid, onMarkUnpaid, onDelete, className = '', isHistorical }: TypeGroupProps) => {
+const TypeGroup = ({
+  label,
+  icon,
+  items,
+  currency,
+  onMarkPaid,
+  onMarkUnpaid,
+  onDelete,
+  className = '',
+  isHistorical,
+}: TypeGroupProps) => {
   if (items.length === 0) return null;
   return (
     <div className={`space-y-2 ${className}`} data-testid={`commitment-group-${label.toLowerCase()}`}>
       <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
         {icon}
-        <span>{label} ({items.length})</span>
+        <span>
+          {label} ({items.length})
+        </span>
       </div>
       <div className="space-y-2 pl-1 border-l-2 border-muted">
         {items.map(commitment => (
@@ -150,9 +162,9 @@ export const CommitmentsList = ({
                   Pending ({unpaidCommitments.length})
                 </h3>
                 <TypeGroup
-                  label="Static"
+                  label="Commitments"
                   icon={<Repeat className="h-3.5 w-3.5 text-blue-500" />}
-                  items={unpaidGroups.static}
+                  items={unpaidGroups.commitment}
                   currency={currency}
                   onMarkPaid={onMarkPaid}
                   onMarkUnpaid={onMarkUnpaid}
@@ -160,9 +172,9 @@ export const CommitmentsList = ({
                   isHistorical={isHistorical}
                 />
                 <TypeGroup
-                  label="Dynamic"
+                  label="Expenses"
                   icon={<Sliders className="h-3.5 w-3.5 text-orange-500" />}
-                  items={unpaidGroups.dynamic}
+                  items={unpaidGroups.expenses}
                   currency={currency}
                   onMarkPaid={onMarkPaid}
                   onMarkUnpaid={onMarkUnpaid}
@@ -192,9 +204,9 @@ export const CommitmentsList = ({
                   Completed ({paidCommitments.length})
                 </h3>
                 <TypeGroup
-                  label="Static"
+                  label="Commitment"
                   icon={<Repeat className="h-3.5 w-3.5 text-blue-500" />}
-                  items={paidGroups.static}
+                  items={paidGroups.commitment}
                   currency={currency}
                   onMarkPaid={onMarkPaid}
                   onMarkUnpaid={onMarkUnpaid}
@@ -202,9 +214,9 @@ export const CommitmentsList = ({
                   isHistorical={isHistorical}
                 />
                 <TypeGroup
-                  label="Dynamic"
+                  label="Expenses"
                   icon={<Sliders className="h-3.5 w-3.5 text-orange-500" />}
-                  items={paidGroups.dynamic}
+                  items={paidGroups.expenses}
                   currency={currency}
                   onMarkPaid={onMarkPaid}
                   onMarkUnpaid={onMarkUnpaid}
@@ -262,7 +274,14 @@ interface CommitmentItemProps {
   isHistorical?: boolean;
 }
 
-const CommitmentItem = ({ commitment, currency, onMarkPaid, onMarkUnpaid, onDelete, isHistorical }: CommitmentItemProps) => {
+const CommitmentItem = ({
+  commitment,
+  currency,
+  onMarkPaid,
+  onMarkUnpaid,
+  onDelete,
+  isHistorical,
+}: CommitmentItemProps) => {
   return (
     <div
       className={`flex flex-col gap-3 p-4 rounded-lg border transition-smooth animate-fade-in ${
@@ -310,7 +329,7 @@ const CommitmentItem = ({ commitment, currency, onMarkPaid, onMarkUnpaid, onDele
 
       {/* Category and Badge Row */}
       <div className="flex items-center gap-2">
-        <Badge variant={commitment.type === 'static' ? 'secondary' : 'outline'} className="text-xs">
+        <Badge variant={commitment.type === 'commitment' ? 'secondary' : 'outline'} className="text-xs">
           {commitment.type}
         </Badge>
         <span className="text-xs text-muted-foreground">{commitment.category}</span>

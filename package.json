@@ -11,6 +11,8 @@
     "start": "NODE_ENV=production node dist/index.js",
     "build:dev": "vite build --mode development",
     "test:e2e": "playwright test",
+    "test:cleanup": "tsx scripts/cleanup-test-data.ts",
+    "test:e2e:clean": "playwright test && npm run test:cleanup",
     "client": "vite",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",

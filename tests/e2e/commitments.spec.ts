@@ -43,7 +43,7 @@ async function fillCommitmentForm(
 
   // Select type by clicking the badge
   if (data.type) {
-    const badgeText = data.type === 'static' ? 'Static' : 'Dynamic';
+    const badgeText = data.type === 'commitment' ? 'Commitment' : 'Expenses';
     await page.locator(`:has-text("${badgeText}")`).first().click();
   }
 
@@ -79,7 +79,7 @@ test.describe('Commitment CRUD operations', () => {
   test('can create a new commitment', async ({ page }) => {
     const title = `Test Commitment ${Date.now()}`;
     await openCommitmentForm(page);
-    await fillCommitmentForm(page, { title, amount: '250', type: 'static', category: 'Utilities' });
+    await fillCommitmentForm(page, { title, amount: '250', type: 'commitment', category: 'Utilities' });
     await submitCommitmentForm(page);
 
     // Commitment should appear in the list
@@ -344,5 +344,202 @@ test.describe('Month navigation with recurring vs non-recurring commitments', ()
       const commitmentInPrevMonth = page.locator(`span:has-text("${recurringTitle}").font-semibold`);
       await expect(commitmentInPrevMonth).not.toBeVisible({ timeout: 5000 });
     }
+  });
+});
+
+test.describe('Undo function', () => {
+  test.beforeEach(async ({ page }) => {
+    await login(page);
+  });
+
+  test('can undo deletion of a non-recurring commitment', async ({ page }) => {
+    const title = `Undo Test ${Date.now()}`;
+    const amount = '150';
+
+    // Create a commitment to delete
+    await openCommitmentForm(page);
+    await fillCommitmentForm(page, { title, amount, category: 'Food' });
+    await submitCommitmentForm(page);
+
+    // Verify commitment appears
+    await expect(page.locator(`span:has-text("${title}").font-semibold`)).toBeVisible({ timeout: 5000 });
+
+    // Delete the commitment
+    const commitmentCard = page.locator(`div.rounded-lg.border:has(span:has-text("${title}"))`).first();
+    const buttons = commitmentCard.getByRole('button');
+    const buttonCount = await buttons.count();
+    await buttons.nth(buttonCount - 1).click();
+
+    // Confirm deletion in modal
+    const confirmBtn = page.locator('button:has-text("Delete")').last();
+    await expect(confirmBtn).toBeVisible({ timeout: 2000 });
+    await confirmBtn.click();
+
+    // Verify commitment is deleted
+    await expect(page.locator(`span:has-text("${title}").font-semibold`)).not.toBeVisible({ timeout: 5000 });
+
+    // Click the Undo button in the toast
+    const undoBtn = page.locator('button:has-text("Undo")').first();
+    await expect(undoBtn).toBeVisible({ timeout: 5000 });
+    await undoBtn.click();
+
+    // Verify commitment is restored
+    await expect(page.locator(`span:has-text("${title}").font-semibold`)).toBeVisible({ timeout: 5000 });
+  });
+
+  test('can undo deletion of a recurring commitment for a single month', async ({ page }) => {
+    const title = `Undo Recurring Single ${Date.now()}`;
+    const amount = '500';
+
+    // Create a recurring commitment
+    await openCommitmentForm(page);
+    await fillCommitmentForm(page, { title, amount, category: 'Utilities' });
+    await toggleRecurringSwitch(page);
+    await submitCommitmentForm(page);
+
+    // Verify commitment appears
+    await expect(page.locator(`span:has-text("${title}").font-semibold`)).toBeVisible({ timeout: 5000 });
+
+    // Delete the commitment for this month only
+    const commitmentCard = page.locator(`div.rounded-lg.border:has(span:has-text("${title}"))`).first();
+    const buttons = commitmentCard.getByRole('button');
+    const buttonCount = await buttons.count();
+    await buttons.nth(buttonCount - 1).click();
+
+    // Confirm deletion with scope='single' (should be selected by default)
+    const confirmBtn = page.locator('button:has-text("Delete")').last();
+    await expect(confirmBtn).toBeVisible({ timeout: 2000 });
+    await confirmBtn.click();
+
+    // Verify commitment is deleted
+    await expect(page.locator(`span:has-text("${title}").font-semibold`)).not.toBeVisible({ timeout: 5000 });
+
+    // Click the Undo button in the toast
+    const undoBtn = page.locator('button:has-text("Undo")').first();
+    await expect(undoBtn).toBeVisible({ timeout: 5000 });
+    await undoBtn.click();
+
+    // Verify commitment is restored
+    await expect(page.locator(`span:has-text("${title}").font-semibold`)).toBeVisible({ timeout: 5000 });
+  });
+
+  test('can undo deletion of a recurring commitment for all months', async ({ page }) => {
+    const title = `Undo Recurring All ${Date.now()}`;
+    const amount = '300';
+
+    // Create a recurring commitment
+    await openCommitmentForm(page);
+    await fillCommitmentForm(page, { title, amount, category: 'Housing' });
+    await toggleRecurringSwitch(page);
+    await submitCommitmentForm(page);
+
+    // Verify commitment appears
+    await expect(page.locator(`span:has-text("${title}").font-semibold`)).toBeVisible({ timeout: 5000 });
+
+    // Delete the commitment
+    const commitmentCard = page.locator(`div.rounded-lg.border:has(span:has-text("${title}"))`).first();
+    const buttons = commitmentCard.getByRole('button');
+    const buttonCount = await buttons.count();
+    await buttons.nth(buttonCount - 1).click();
+
+    // Select "Delete permanently (all months)" option if available
+    const allMonthsOption = page.locator('button:has-text("Delete permanently")');
+    if (await allMonthsOption.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await allMonthsOption.click();
+      await page.waitForTimeout(300); // Brief wait for selection
+    }
+
+    // Confirm deletion
+    const confirmBtn = page.locator('button:has-text("Delete")').last();
+    await expect(confirmBtn).toBeVisible({ timeout: 2000 });
+    await confirmBtn.click();
+
+    // Verify commitment is deleted
+    await expect(page.locator(`span:has-text("${title}").font-semibold`)).not.toBeVisible({ timeout: 5000 });
+
+    // Click the Undo button in the toast
+    const undoBtn = page.locator('button:has-text("Undo")').first();
+    await expect(undoBtn).toBeVisible({ timeout: 5000 });
+    await undoBtn.click();
+
+    // Verify commitment is restored with same amount
+    await expect(page.locator(`span:has-text("${title}").font-semibold`)).toBeVisible({ timeout: 5000 });
+    // Scope the amount check to the specific commitment card
+    const restoredCard = page.locator(`div.rounded-lg.border:has(span:has-text("${title}"))`);
+    await expect(restoredCard.locator(`text=${amount}`)).toBeVisible();
+  });
+
+  test('undo toast disappears after 5 seconds if not clicked', async ({ page }) => {
+    const title = `Undo Timeout ${Date.now()}`;
+
+    // Create and delete a commitment
+    await openCommitmentForm(page);
+    await fillCommitmentForm(page, { title, amount: '100', category: 'Other' });
+    await submitCommitmentForm(page);
+
+    await expect(page.locator(`span:has-text("${title}").font-semibold`)).toBeVisible({ timeout: 5000 });
+
+    // Delete the commitment
+    const commitmentCard = page.locator(`div.rounded-lg.border:has(span:has-text("${title}"))`).first();
+    const buttons = commitmentCard.getByRole('button');
+    const buttonCount = await buttons.count();
+    await buttons.nth(buttonCount - 1).click();
+
+    // Confirm deletion
+    const confirmBtn = page.locator('button:has-text("Delete")').last();
+    await expect(confirmBtn).toBeVisible({ timeout: 2000 });
+    await confirmBtn.click();
+
+    // Verify toast appears
+    const undoBtn = page.locator('button:has-text("Undo")').first();
+    await expect(undoBtn).toBeVisible({ timeout: 5000 });
+
+    // Wait for toast to auto-dismiss (5 seconds + buffer)
+    await page.waitForTimeout(6000);
+
+    // Toast should be gone
+    await expect(undoBtn).not.toBeVisible({ timeout: 2000 });
+
+    // Verify commitment is still deleted
+    await expect(page.locator(`span:has-text("${title}").font-semibold`)).not.toBeVisible({ timeout: 2000 });
+  });
+
+  test('restored commitment preserves all properties', async ({ page }) => {
+    const title = `Preserve Properties ${Date.now()}`;
+    const amount = '350.50';
+    const category = 'Entertainment';
+
+    // Create a commitment with specific properties
+    await openCommitmentForm(page);
+    await fillCommitmentForm(page, { title, amount, category, type: 'commitment' });
+    await submitCommitmentForm(page);
+
+    // Verify commitment appears
+    await expect(page.locator(`span:has-text("${title}").font-semibold`)).toBeVisible({ timeout: 5000 });
+
+    // Delete the commitment
+    const commitmentCard = page.locator(`div.rounded-lg.border:has(span:has-text("${title}"))`).first();
+    const buttons = commitmentCard.getByRole('button');
+    const buttonCount = await buttons.count();
+    await buttons.nth(buttonCount - 1).click();
+
+    // Confirm deletion
+    const confirmBtn = page.locator('button:has-text("Delete")').last();
+    await expect(confirmBtn).toBeVisible({ timeout: 2000 });
+    await confirmBtn.click();
+
+    // Wait for deletion and undo toast
+    await expect(page.locator(`span:has-text("${title}").font-semibold`)).not.toBeVisible({ timeout: 5000 });
+
+    // Click undo
+    const undoBtn = page.locator('button:has-text("Undo")').first();
+    await expect(undoBtn).toBeVisible({ timeout: 5000 });
+    await undoBtn.click();
+
+    // Verify all properties are preserved
+    await expect(page.locator(`span:has-text("${title}").font-semibold`)).toBeVisible({ timeout: 5000 });
+    // Scope the category check to the specific commitment card
+    const restoredCard = page.locator(`div.rounded-lg.border:has(span:has-text("${title}"))`);
+    await expect(restoredCard.locator(`text=${category}`)).toBeVisible();
   });
 });

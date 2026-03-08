@@ -1,6 +1,6 @@
 [
   {
-    "type": "static",
+    "type": "commitment",
     "title": "Rent Payment",
     "category": "Housing",
     "amount": 1500,
@@ -8,7 +8,7 @@
     "startDate": "2024-01-01"
   },
   {
-    "type": "static",
+    "type": "commitment",
     "title": "Internet Bill",
     "category": "Utilities",
     "amount": 80,
@@ -16,7 +16,7 @@
     "startDate": "2024-01-01"
   },
   {
-    "type": "dynamic",
+    "type": "expenses",
     "title": "Groceries Jan",
     "category": "Food",
     "amount": 300,
@@ -24,7 +24,7 @@
     "startDate": "2024-01-15"
   },
   {
-    "type": "dynamic",
+    "type": "expenses",
     "title": "Gas Station",
     "category": "Transportation",
     "amount": 50,
@@ -32,7 +32,7 @@
     "startDate": "2024-01-20"
   },
   {
-    "type": "static",
+    "type": "commitment",
     "title": "Phone Bill",
     "category": "Utilities",
     "amount": 45,
@@ -40,7 +40,7 @@
     "startDate": "2024-01-05"
   },
   {
-    "type": "dynamic",
+    "type": "expenses",
     "title": "Restaurant Dinner",
     "category": "Food",
     "amount": 75,
@@ -48,7 +48,7 @@
     "startDate": "2024-01-25"
   },
   {
-    "type": "static",
+    "type": "commitment",
     "title": "Gym Membership",
     "category": "Health",
     "amount": 40,
@@ -56,7 +56,7 @@
     "startDate": "2024-01-01"
   },
   {
-    "type": "dynamic",
+    "type": "expenses",
     "title": "Shopping",
     "category": "Shopping",
     "amount": 120,
@@ -64,7 +64,7 @@
     "startDate": "2024-01-18"
   },
   {
-    "type": "static",
+    "type": "commitment",
     "title": "Insurance",
     "category": "Insurance",
     "amount": 200,
@@ -72,7 +72,7 @@
     "startDate": "2024-01-01"
   },
   {
-    "type": "dynamic",
+    "type": "expenses",
     "title": "Coffee Shop",
     "category": "Food",
     "amount": 25,

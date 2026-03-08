@@ -13,6 +13,7 @@ npx prisma db push
 ```
 
 **Expected Output:**
+
 ```
 ✔ Generated Prisma Client
 ✔ Database schema updated
@@ -50,6 +51,7 @@ npm run build && npm start
 ### Step 4: Test Groups Feature (2 min)
 
 **User A (First Account):**
+
 1. **Click** Users icon in header → Navigate to Groups
 2. **Click** "Create Group"
 3. **Enter** "Test Family" as name
@@ -59,12 +61,14 @@ npm run build && npm start
 7. **Enter** User B's email (need 2nd test account)
 
 **User B (Second Account):**
+
 1. **Navigate** to Groups page
 2. **See** invitation in "Pending Invitations"
 3. **Click** "Accept"
 4. **View** group details
 
 **User A (Back to Dashboard):**
+
 1. **Create** new commitment:
    - Title: "Shared Rent"
    - Amount: 1500
@@ -73,6 +77,7 @@ npm run build && npm start
 2. **Submit**
 
 **User B (Dashboard):**
+
 1. **Toggle** "Show Shared Commitments"
 2. **See** "Shared Rent" with blue "Shared" badge
 3. **Mark** as paid
@@ -84,30 +89,35 @@ npm run build && npm start
 ## 🎯 Quick Feature Overview
 
 ### 1. Import Wizard
+
 **What:** Import historical commitments from CSV or JSON
 **Access:** Dashboard → "Import Commitments" button
 **Formats:** CSV (sample: `docs/sample-import.csv`) or JSON
 **Result:** Imported records marked with purple badge
 
 ### 2. Groups
+
 **What:** Share commitments with family/roommates
 **Access:** Click Users icon in header → Groups page
 **Actions:** Create group, invite members, share commitments
 **Result:** Shared commitments visible to all members
 
 ### 3. Dashboard Filters
+
 **What:** Toggle visibility of different commitment types
 **Access:** Dashboard → "View Options" card
-**Filters:** 
+**Filters:**
+
 - Show Shared Commitments (blue badge)
 - Show Imported Records (purple badge)
-**Result:** Dynamic filtering of commitments
+  **Result:** Expenses filtering of commitments
 
 ---
 
 ## 📁 Key Files to Review
 
 ### Backend
+
 ```
 server/group/
 ├── controller.ts    # Request handlers
@@ -120,6 +130,7 @@ server/commitment/
 ```
 
 ### Frontend
+
 ```
 client/src/pages/
 └── GroupsPage.tsx   # Main groups page
@@ -138,6 +149,7 @@ client/src/components/Dashboard/
 ```
 
 ### Database
+
 ```
 prisma/schema.prisma
 - Added: Group model
@@ -150,6 +162,7 @@ prisma/schema.prisma
 ## 🧪 Quick Test Checklist
 
 ### Import Feature
+
 - [ ] Upload CSV file
 - [ ] See 10 commitments in preview
 - [ ] Import completes successfully
@@ -157,6 +170,7 @@ prisma/schema.prisma
 - [ ] Toggle filter works
 
 ### Groups Feature
+
 - [ ] Create group succeeds
 - [ ] Invite member works
 - [ ] Member sees invitation
@@ -165,6 +179,7 @@ prisma/schema.prisma
 - [ ] Mark as paid updates for both
 
 ### Dashboard Filters
+
 - [ ] Personal commitments show by default
 - [ ] Shared filter toggle works
 - [ ] Imported filter toggle works
@@ -175,21 +190,28 @@ prisma/schema.prisma
 ## 🔍 Common Issues & Solutions
 
 ### Issue: "Prisma Client not generated"
+
 **Solution:**
+
 ```bash
 npx prisma generate
 ```
 
 ### Issue: "User not found" when inviting
+
 **Solution:** Make sure the email matches an existing user in the database. Create a second test account first.
 
 ### Issue: Import file not accepted
+
 **Solution:** Check file format matches sample:
+
 - CSV: `type,title,category,amount`
 - JSON: Array of objects with required fields
 
 ### Issue: Shared commitments not showing
-**Solution:** 
+
+**Solution:**
+
 1. Toggle "Show Shared Commitments" in Dashboard
 2. Verify commitment has `shared: true`
 3. Ensure you're in the group
@@ -199,6 +221,7 @@ npx prisma generate
 ## 📊 Visual Guide
 
 ### Dashboard - New Features
+
 ```
 ┌─────────────────────────────────────┐
 │  Dashboard Header                   │
@@ -221,6 +244,7 @@ npx prisma generate
 ```
 
 ### Groups Page
+
 ```
 ┌─────────────────────────────────────┐
 │  Pending Invitations                │
@@ -240,6 +264,7 @@ npx prisma generate
 ```
 
 ### Import Wizard
+
 ```
 Step 1: Upload
 ┌─────────────────────────────────────┐
@@ -271,12 +296,12 @@ Step 3: Complete
 
 ## 🎨 Visual Indicators
 
-| Badge | Color | Meaning | When Shown |
-|-------|-------|---------|------------|
-| **Shared 👥** | Blue | Group commitment | `shared: true` and in group |
-| **Imported** | Purple | Historical data | `isImported: true` |
-| **📅** | Purple icon | Recurring | `recurring: true` |
-| **👑 Owner** | Gray | Group owner | User created the group |
+| Badge         | Color       | Meaning          | When Shown                  |
+| ------------- | ----------- | ---------------- | --------------------------- |
+| **Shared 👥** | Blue        | Group commitment | `shared: true` and in group |
+| **Imported**  | Purple      | Historical data  | `isImported: true`          |
+| **📅**        | Purple icon | Recurring        | `recurring: true`           |
+| **👑 Owner**  | Gray        | Group owner      | User created the group      |
 
 ---
 
@@ -315,6 +340,7 @@ You'll know Phase 4 is working when:
 ## 🎉 You're Done!
 
 Phase 4 is ready to use. Enjoy the new features:
+
 - 🗂️ Group collaboration
 - 📊 Historical data import
 - 🎯 Smart filtering

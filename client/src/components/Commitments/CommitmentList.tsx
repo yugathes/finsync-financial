@@ -8,7 +8,7 @@ export interface CommitmentWithStatus {
   id: string;
   title: string;
   amount: string;
-  type: 'static' | 'dynamic';
+  type: 'commitment' | 'expenses';
   category: string;
   recurring: boolean;
   shared: boolean;
@@ -33,15 +33,15 @@ interface CommitmentListProps {
 export const CommitmentList: React.FC<CommitmentListProps> = ({
   commitments,
   month,
-  currency = "MYR",
+  currency = 'MYR',
   onMarkPaid,
   onMarkUnpaid,
   onEdit,
-  onDelete
+  onDelete,
 }) => {
   const unpaidCommitments = commitments.filter(c => !c.isPaid);
   const paidCommitments = commitments.filter(c => c.isPaid);
-  
+
   const formatMonth = (monthStr: string) => {
     const [year, month] = monthStr.split('-');
     const date = new Date(parseInt(year), parseInt(month) - 1);
@@ -61,18 +61,16 @@ export const CommitmentList: React.FC<CommitmentListProps> = ({
   };
 
   const CommitmentItem: React.FC<{ commitment: CommitmentWithStatus }> = ({ commitment }) => (
-    <div 
+    <div
       className={`flex items-center justify-between p-4 rounded-xl border transition-all duration-200 ${
-        commitment.isPaid 
-          ? 'bg-green-50 border-green-200 opacity-75' 
-          : 'bg-white border-gray-200 hover:shadow-sm'
+        commitment.isPaid ? 'bg-green-50 border-green-200 opacity-75' : 'bg-white border-gray-200 hover:shadow-sm'
       }`}
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-2">
-          <span className={`font-medium text-base ${
-            commitment.isPaid ? 'text-gray-500 line-through' : 'text-gray-900'
-          }`}>
+          <span
+            className={`font-medium text-base ${commitment.isPaid ? 'text-gray-500 line-through' : 'text-gray-900'}`}
+          >
             {commitment.title}
           </span>
           {commitment.shared && (
@@ -86,54 +84,40 @@ export const CommitmentList: React.FC<CommitmentListProps> = ({
               Imported
             </Badge>
           )}
-          {commitment.recurring && (
-            <Calendar className="h-4 w-4 text-purple-500 flex-shrink-0" />
-          )}
+          {commitment.recurring && <Calendar className="h-4 w-4 text-purple-500 flex-shrink-0" />}
         </div>
         <div className="flex items-center gap-2 text-sm">
-          <Badge 
-            variant={commitment.type === 'static' ? 'secondary' : 'outline'} 
-            className="text-xs"
-          >
+          <Badge variant={commitment.type === 'commitment' ? 'secondary' : 'outline'} className="text-xs">
             {commitment.type}
           </Badge>
           <span className="text-gray-500">{commitment.category}</span>
         </div>
       </div>
-      
+
       <div className="flex items-center gap-3 ml-4">
-        <div className={`text-lg font-semibold text-right ${
-          commitment.isPaid ? 'text-gray-500' : 'text-gray-900'
-        }`}>
+        <div className={`text-lg font-semibold text-right ${commitment.isPaid ? 'text-gray-500' : 'text-gray-900'}`}>
           <div className="text-xs text-gray-400">{currency}</div>
           <div>{parseFloat(commitment.amount).toLocaleString()}</div>
         </div>
-        
+
         <div className="flex items-center gap-1">
           <Button
-            variant={commitment.isPaid ? "secondary" : "default"}
+            variant={commitment.isPaid ? 'secondary' : 'default'}
             size="sm"
             onClick={() => handleTogglePaid(commitment)}
             className={`flex-shrink-0 ${
-              !commitment.isPaid 
-                ? 'bg-green-600 hover:bg-green-700 text-white' 
-                : 'bg-gray-200 hover:bg-gray-300'
+              !commitment.isPaid ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-200 hover:bg-gray-300'
             }`}
           >
             <Check className="h-4 w-4" />
           </Button>
-          
+
           {onEdit && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onEdit(commitment)}
-              className="flex-shrink-0"
-            >
+            <Button variant="ghost" size="sm" onClick={() => onEdit(commitment)} className="flex-shrink-0">
               <Edit className="h-4 w-4" />
             </Button>
           )}
-          
+
           {onDelete && (
             <Button
               variant="ghost"
@@ -160,12 +144,13 @@ export const CommitmentList: React.FC<CommitmentListProps> = ({
           <div className="flex items-center gap-2 text-sm">
             <Clock className="h-4 w-4 text-blue-500" />
             <span className="text-blue-600">
-              {unpaidCommitments.length} remaining • {currency} {unpaidCommitments.reduce((sum, c) => sum + (parseFloat(c.amount) || 0), 0).toLocaleString()} to pay
+              {unpaidCommitments.length} remaining • {currency}{' '}
+              {unpaidCommitments.reduce((sum, c) => sum + (parseFloat(c.amount) || 0), 0).toLocaleString()} to pay
             </span>
           </div>
         )}
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
         {commitments.length === 0 ? (
           <div className="text-center py-12 text-blue-600">
@@ -180,7 +165,7 @@ export const CommitmentList: React.FC<CommitmentListProps> = ({
                 <h3 className="font-medium text-sm text-gray-600 uppercase tracking-wide">
                   Pending ({unpaidCommitments.length})
                 </h3>
-                {unpaidCommitments.map((commitment) => (
+                {unpaidCommitments.map(commitment => (
                   <CommitmentItem key={commitment.id} commitment={commitment} />
                 ))}
               </div>
@@ -191,7 +176,7 @@ export const CommitmentList: React.FC<CommitmentListProps> = ({
                 <h3 className="font-medium text-sm text-gray-600 uppercase tracking-wide">
                   Completed ({paidCommitments.length})
                 </h3>
-                {paidCommitments.map((commitment) => (
+                {paidCommitments.map(commitment => (
                   <CommitmentItem key={commitment.id} commitment={commitment} />
                 ))}
               </div>
