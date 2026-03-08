@@ -537,9 +537,10 @@ test.describe('Monthly Budget Limit', () => {
   });
 
   test('no budget warning shown when no budget limit is set', async ({ page }) => {
-    // Ensure no budget is set by checking there is no warning banner
+    // Ensure no budget is set by checking there is no warning banner or budget limit section
     await expect(page.locator('[data-testid="budget-over-alert"]')).not.toBeVisible({ timeout: 3000 });
     await expect(page.locator('[data-testid="budget-warning"]')).not.toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[data-testid="budget-limit-section"]')).not.toBeVisible({ timeout: 3000 });
   });
 
   test('setting a budget limit shows the budget limit progress bar', async ({ page }) => {

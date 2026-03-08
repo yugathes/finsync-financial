@@ -24,6 +24,7 @@ export const BudgetModal = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // An empty value or explicit '0' is treated as "no limit" — budget is cleared.
     if (budget === '' || budget === '0') {
       onSubmit(null);
     } else {

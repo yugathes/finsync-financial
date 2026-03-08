@@ -19,6 +19,14 @@ import { toast as sonnerToast } from 'sonner';
 import { CommitmentWithStatus } from '../Commitments/CommitmentList';
 
 // API helper functions
+class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
 const apiRequest = async (url: string, options: any = {}) => {
   const response = await fetch(url, {
     headers: {
@@ -29,7 +37,7 @@ const apiRequest = async (url: string, options: any = {}) => {
   });
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.details || error.error || 'Request failed');
+    throw new ApiError(error.details || error.error || 'Request failed', response.status);
   }
   return response.json();
 };
@@ -96,7 +104,7 @@ export const RefactoredDashboard = () => {
         incomeAmount = incomeData?.amount ? parseFloat(incomeData.amount) : 0;
       } catch (error: any) {
         // If income not found for this month, default to 0 (no error message)
-        if (error.message?.includes('not found') || error.message?.includes('404')) {
+        if (error.status === 404) {
           console.log(`[RefactoredDashboard] No income record for ${currentMonth}, defaulting to 0`);
           incomeAmount = 0;
         } else {
@@ -119,7 +127,7 @@ export const RefactoredDashboard = () => {
         const budgetData = await apiRequest(`/api/budget/${user.id}/${currentMonth}`);
         budgetAmount = budgetData?.budgetLimit ? parseFloat(budgetData.budgetLimit) : null;
       } catch (error: any) {
-        if (!error.message?.includes('not found') && !error.message?.includes('404')) {
+        if (error.status !== 404) {
           throw error;
         }
       }
@@ -151,7 +159,7 @@ export const RefactoredDashboard = () => {
           await apiRequest(`/api/budget/${user.id}/${currentMonth}`, { method: 'DELETE' });
         } catch (error: any) {
           // 404 means no budget was set – that's fine
-          if (!error.message?.includes('not found') && !error.message?.includes('404')) {
+          if (error.status !== 404) {
             throw error;
           }
         }
