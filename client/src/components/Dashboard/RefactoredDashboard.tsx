@@ -417,7 +417,7 @@ export const RefactoredDashboard = () => {
   }
 
   return (
-    <Layout title="FinSync - Financial Dashboard">
+    <Layout title="FinSync - Dashboard">
       <div className="space-y-6 pb-20 sm:pb-6">
         {/* Welcome Section */}
         <div className="text-center space-y-2">
