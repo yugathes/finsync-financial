@@ -8,6 +8,7 @@ import { CommitmentForm } from '../Commitments/CommitmentForm';
 import { IncomeModal } from './IncomeModal';
 import { BudgetModal } from './BudgetModal';
 import { DeleteConfirmationModal } from '../Commitments/DeleteConfirmationModal';
+import { IncomeWarningModal } from './IncomeWarningModal';
 import { FloatingActionButton } from '../ui/FloatingActionButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -62,6 +63,8 @@ export const RefactoredDashboard = () => {
   // const [showImportWizard, setShowImportWizard] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [commitmentToDelete, setCommitmentToDelete] = useState<CommitmentWithStatus | null>(null);
+  const [showIncomeWarning, setShowIncomeWarning] = useState(false);
+  const [commitmentForWarning, setCommitmentForWarning] = useState<{ id: string; title: string; amount: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Filter state
@@ -245,7 +248,25 @@ export const RefactoredDashboard = () => {
     }
   };
 
-  const handleMarkPaid = async (commitmentId: string, amount: number) => {
+  const handleMarkPaid = (commitmentId: string, amount: number) => {
+    // Check if income is 0, if so show warning
+    if (monthlyIncome === 0) {
+      const commitment = commitments.find(c => c.id === commitmentId);
+      if (commitment) {
+        setCommitmentForWarning({
+          id: commitmentId,
+          title: commitment.title,
+          amount: commitment.amount,
+        });
+        setShowIncomeWarning(true);
+      }
+      return;
+    }
+    // If income is set, proceed directly
+    proceedWithMarkPaid(commitmentId, amount);
+  };
+
+  const proceedWithMarkPaid = async (commitmentId: string, amount: number) => {
     if (!user?.id) return;
     try {
       await apiRequest(`/api/commitments/${commitmentId}/pay`, {
@@ -604,6 +625,22 @@ export const RefactoredDashboard = () => {
           currentMonth={currentMonth}
           onConfirm={handleConfirmDelete}
           onCancel={handleCancelDelete}
+        />
+
+        <IncomeWarningModal
+          isOpen={showIncomeWarning}
+          commitment={commitmentForWarning}
+          onContinue={async () => {
+            if (commitmentForWarning) {
+              await proceedWithMarkPaid(commitmentForWarning.id, commitmentForWarning.amount);
+              setShowIncomeWarning(false);
+              setCommitmentForWarning(null);
+            }
+          }}
+          onCancel={() => {
+            setShowIncomeWarning(false);
+            setCommitmentForWarning(null);
+          }}
         />
       </div>
     </Layout>
