@@ -65,10 +65,10 @@ export const BalanceCard = ({ income, commitments, paidAmount = 0, currency = "M
           <div
             data-testid="budget-over-alert"
             role="alert"
-            className="flex items-center gap-2 rounded-lg bg-red-500/20 border border-red-400/40 px-3 py-2 text-sm text-red-200"
+            className="flex items-start gap-2 rounded-lg bg-red-500/20 border border-red-400/40 px-3 py-2 text-sm text-red-200"
           >
-            <AlertCircle className="h-4 w-4 flex-shrink-0" />
-            <span>
+            <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+            <span className="text-balance">
               <strong>Over budget!</strong> Commitments ({currency} {commitments.toLocaleString()}) exceed your{' '}
               {currency} {budgetLimit?.toLocaleString()} limit.
             </span>
@@ -78,10 +78,10 @@ export const BalanceCard = ({ income, commitments, paidAmount = 0, currency = "M
           <div
             data-testid="budget-warning"
             role="status"
-            className="flex items-center gap-2 rounded-lg bg-amber-500/20 border border-amber-400/40 px-3 py-2 text-sm text-amber-200"
+            className="flex items-start gap-2 rounded-lg bg-amber-500/20 border border-amber-400/40 px-3 py-2 text-sm text-amber-200"
           >
-            <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-            <span>
+            <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+            <span className="text-balance">
               <strong>Approaching limit!</strong> You have used {budgetLimitRaw.toFixed(1)}% of your{' '}
               {currency} {budgetLimit?.toLocaleString()} budget.
             </span>
@@ -90,7 +90,7 @@ export const BalanceCard = ({ income, commitments, paidAmount = 0, currency = "M
 
         {/* Main Balance */}
         <div className="text-center">
-          <div className={`text-3xl font-bold ${isPositive ? 'text-green-200' : 'text-red-200'}`}>
+          <div className={`text-2xl sm:text-3xl font-bold break-all ${isPositive ? 'text-green-200' : 'text-red-200'}`}>
             {currency} {balance.toLocaleString()}
           </div>
           <div className="flex items-center justify-center gap-1 mt-1">
@@ -204,25 +204,25 @@ export const BalanceCard = ({ income, commitments, paidAmount = 0, currency = "M
         )}
 
         {/* Income & Commitments Breakdown */}
-        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-primary-foreground/20">
-          <div className="text-center">
+        <div className="grid grid-cols-2 gap-3 pt-4 border-t border-primary-foreground/20">
+          <div className="text-center min-w-0">
             <div className="text-sm text-primary-foreground/70">Income</div>
-            <div className="text-xl font-semibold text-accent-foreground">
+            <div className="text-lg sm:text-xl font-semibold text-accent-foreground break-all">
               {currency} {income.toLocaleString()}
             </div>
           </div>
-          <div className="text-center">
+          <div className="text-center min-w-0">
             <div className="text-sm text-primary-foreground/70">Commitments</div>
-            <div className="text-xl font-semibold text-destructive-foreground">
+            <div className="text-lg sm:text-xl font-semibold text-destructive-foreground break-all">
               {currency} {commitments.toLocaleString()}
             </div>
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Button
             variant="secondary"
-            className="flex-1 bg-background text-foreground hover:bg-background/90 transition-smooth"
+            className="flex-1 bg-background text-foreground hover:bg-background/90 transition-smooth touch-target"
             onClick={onUpdateIncome}
           >
             Update Income
@@ -230,7 +230,7 @@ export const BalanceCard = ({ income, commitments, paidAmount = 0, currency = "M
           {onUpdateBudget && (
             <Button
               variant="secondary"
-              className="flex-1 bg-background/80 text-foreground hover:bg-background/90 transition-smooth flex items-center gap-1"
+              className="flex-1 bg-background/80 text-foreground hover:bg-background/90 transition-smooth flex items-center justify-center gap-1 touch-target"
               onClick={onUpdateBudget}
               data-testid="set-budget-btn"
             >

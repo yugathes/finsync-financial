@@ -92,16 +92,16 @@ export const MonthSelector: React.FC<MonthSelectorProps> = ({
         onClick={handlePrev}
         aria-label="Previous month"
         data-testid="month-prev"
-        className="text-blue-600"
+        className="text-blue-600 touch-target flex-shrink-0"
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
 
       {/* Month dropdown */}
-      <div className="flex flex-col items-center gap-1">
+      <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
         <Select value={currentMonth} onValueChange={onChange}>
           <SelectTrigger
-            className="w-48 border-0 shadow-none bg-transparent font-semibold text-blue-800 focus:ring-0 focus:ring-offset-0 justify-center gap-2"
+            className="w-full max-w-48 border-0 shadow-none bg-transparent font-semibold text-blue-800 focus:ring-0 focus:ring-offset-0 justify-center gap-2"
             data-testid="month-dropdown-trigger"
           >
             <Calendar className="h-4 w-4 flex-shrink-0" />
@@ -147,7 +147,7 @@ export const MonthSelector: React.FC<MonthSelectorProps> = ({
         onClick={handleNext}
         aria-label="Next month"
         data-testid="month-next"
-        className="text-blue-600"
+        className="text-blue-600 touch-target flex-shrink-0"
       >
         <ChevronRight className="h-4 w-4" />
       </Button>

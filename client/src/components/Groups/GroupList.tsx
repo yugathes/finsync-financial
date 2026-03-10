@@ -71,19 +71,19 @@ export const GroupList: React.FC<GroupListProps> = ({
             {invitations.map((invitation) => (
               <div
                 key={invitation.id}
-                className="flex items-center justify-between p-3 rounded-lg border bg-blue-50 border-blue-200"
+                className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg border bg-blue-50 border-blue-200"
               >
-                <div className="flex-1">
-                  <div className="font-medium text-gray-900">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-gray-900 text-balance">
                     {invitation.group.name}
                   </div>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-600 truncate">
                     Invited by {invitation.group.owner.email}
                   </div>
                 </div>
                 <Button
                   onClick={() => onAcceptInvitation(invitation)}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-blue-600 hover:bg-blue-700 touch-target w-full sm:w-auto"
                 >
                   Accept
                 </Button>
@@ -95,7 +95,7 @@ export const GroupList: React.FC<GroupListProps> = ({
 
       {/* Groups */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Users className="h-5 w-5 text-blue-600" />
             My Groups
@@ -103,7 +103,7 @@ export const GroupList: React.FC<GroupListProps> = ({
           <Button
             onClick={onCreateGroup}
             size="sm"
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 flex-shrink-0 touch-target"
           >
             <Plus className="h-4 w-4 mr-1" />
             Create Group
@@ -126,15 +126,15 @@ export const GroupList: React.FC<GroupListProps> = ({
                   <div
                     key={group.id}
                     onClick={() => onSelectGroup(group)}
-                    className="flex items-center justify-between p-4 rounded-lg border hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all"
+                    className="flex items-center justify-between gap-2 p-4 rounded-lg border hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all touch-target"
                   >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-gray-900">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="font-medium text-gray-900 truncate">
                           {group.name}
                         </span>
                         {isOwner && (
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge variant="secondary" className="text-xs flex-shrink-0">
                             <Crown className="h-3 w-3 mr-1" />
                             Owner
                           </Badge>
