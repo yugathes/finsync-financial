@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Check, Undo2, Users, Clock, Trash2, FileText, Repeat, Sliders } from 'lucide-react';
+import { Plus, Check, Undo2, Users, Clock, Trash2, FileText, Repeat, Sliders, AlertCircle } from 'lucide-react';
 
 interface Commitment {
   id: string;
@@ -103,6 +103,9 @@ export const CommitmentsList = ({
   const importedCommitments = commitments.filter(c => c.isImported);
   const totalUnpaid = unpaidCommitments.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
 
+  // Overdue = unpaid items viewed in a historical (past) month
+  const overdueCount = isHistorical ? unpaidCommitments.length : 0;
+
   const unpaidGroups = groupByType(unpaidCommitments);
   const paidGroups = groupByType(paidCommitments);
 
@@ -110,9 +113,26 @@ export const CommitmentsList = ({
     <Card className="bg-white shadow-lg border-0 animate-fade-in">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-medium text-blue-800">
-            {isHistorical ? 'Historical Commitments' : "This Month's Commitments"}
-          </CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-lg font-medium text-blue-800">
+              {isHistorical ? 'Historical Commitments' : "This Month's Commitments"}
+            </CardTitle>
+            {unpaidCommitments.length > 0 && (
+              <Badge
+                data-testid="unpaid-commitments-badge"
+                variant="secondary"
+                className={`text-xs font-semibold ${
+                  overdueCount > 0
+                    ? 'bg-red-100 text-red-700 border border-red-300'
+                    : 'bg-amber-100 text-amber-700 border border-amber-300'
+                }`}
+                aria-label={`${unpaidCommitments.length} unpaid commitment${unpaidCommitments.length === 1 ? '' : 's'}`}
+              >
+                {overdueCount > 0 && <AlertCircle className="h-3 w-3 mr-1" aria-hidden="true" />}
+                {unpaidCommitments.length} unpaid
+              </Badge>
+            )}
+          </div>
           {!isHistorical && (
             <Button
               variant="default"
@@ -158,8 +178,13 @@ export const CommitmentsList = ({
             {/* Unpaid Commitments — grouped by type */}
             {unpaidCommitments.length > 0 && (
               <div className="space-y-4" data-testid="section-pending">
-                <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-                  Pending ({unpaidCommitments.length})
+                <h3
+                  className={`font-medium text-sm uppercase tracking-wide flex items-center gap-1.5 ${
+                    overdueCount > 0 ? 'text-red-600' : 'text-muted-foreground'
+                  }`}
+                >
+                  {overdueCount > 0 && <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />}
+                  {overdueCount > 0 ? `Overdue (${unpaidCommitments.length})` : `Pending (${unpaidCommitments.length})`}
                 </h3>
                 <TypeGroup
                   label="Commitments"
@@ -282,15 +307,19 @@ const CommitmentItem = ({
   onDelete,
   isHistorical,
 }: CommitmentItemProps) => {
+  // A commitment is overdue when it is unpaid and belongs to a past (historical) month
+  const isOverdue = isHistorical && !commitment.isPaid;
+
   return (
     <div
+      data-testid={isOverdue ? 'overdue-commitment-item' : 'commitment-item'}
       className={`flex flex-col gap-3 p-4 rounded-lg border transition-smooth animate-fade-in ${
         commitment.isPaid
           ? 'bg-muted/30 border-muted opacity-75'
           : commitment.isImported
             ? 'bg-purple-50/30 border-purple-100'
-            : isHistorical
-              ? 'bg-amber-50/30 border-amber-100'
+            : isOverdue
+              ? 'bg-red-50 border-red-300'
               : 'bg-background border-border hover:shadow-sm hover:border-primary/20'
       }`}
     >
@@ -300,11 +329,21 @@ const CommitmentItem = ({
           <div className="flex items-center gap-2 flex-wrap">
             <span
               className={`font-semibold text-sm leading-tight ${
-                commitment.isPaid ? 'text-muted-foreground line-through' : ''
+                commitment.isPaid ? 'text-muted-foreground line-through' : isOverdue ? 'text-red-700' : ''
               }`}
             >
               {commitment.title}
             </span>
+            {isOverdue && (
+              <Badge
+                variant="destructive"
+                className="text-xs bg-red-100 text-red-700 border border-red-300"
+                aria-label="Overdue unpaid commitment"
+              >
+                <AlertCircle className="h-3 w-3 mr-1" aria-hidden="true" />
+                Overdue
+              </Badge>
+            )}
             {commitment.shared && (
               <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
                 <Users className="h-3 w-3 mr-1" />
@@ -320,8 +359,8 @@ const CommitmentItem = ({
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="text-lg font-bold">{currency}</div>
-          <span className={`text-lg font-bold ${commitment.isPaid ? 'text-muted-foreground' : ''}`}>
+          <div className={`text-lg font-bold ${isOverdue ? 'text-red-700' : ''}`}>{currency}</div>
+          <span className={`text-lg font-bold ${commitment.isPaid ? 'text-muted-foreground' : isOverdue ? 'text-red-700' : ''}`}>
             {commitment.amount.toLocaleString()}
           </span>
         </div>

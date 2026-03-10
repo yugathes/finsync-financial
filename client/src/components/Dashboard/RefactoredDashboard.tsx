@@ -8,12 +8,13 @@ import { CommitmentForm } from '../Commitments/CommitmentForm';
 import { IncomeModal } from './IncomeModal';
 import { BudgetModal } from './BudgetModal';
 import { DeleteConfirmationModal } from '../Commitments/DeleteConfirmationModal';
+import { IncomeWarningModal } from './IncomeWarningModal';
 import { FloatingActionButton } from '../ui/FloatingActionButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, TrendingUp, Calendar, History, Upload, Users, FileText } from 'lucide-react';
+import { TrendingUp, Calendar, History, Users, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { toast as sonnerToast } from 'sonner';
 import { CommitmentWithStatus } from '../Commitments/CommitmentList';
@@ -62,6 +63,8 @@ export const RefactoredDashboard = () => {
   // const [showImportWizard, setShowImportWizard] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [commitmentToDelete, setCommitmentToDelete] = useState<CommitmentWithStatus | null>(null);
+  const [showIncomeWarning, setShowIncomeWarning] = useState(false);
+  const [commitmentForWarning, setCommitmentForWarning] = useState<{ id: string; title: string; amount: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Filter state
@@ -245,7 +248,25 @@ export const RefactoredDashboard = () => {
     }
   };
 
-  const handleMarkPaid = async (commitmentId: string, amount: number) => {
+  const handleMarkPaid = (commitmentId: string, amount: number) => {
+    // Check if income is 0, if so show warning
+    if (monthlyIncome === 0) {
+      const commitment = commitments.find(c => c.id === commitmentId);
+      if (commitment) {
+        setCommitmentForWarning({
+          id: commitmentId,
+          title: commitment.title,
+          amount: commitment.amount,
+        });
+        setShowIncomeWarning(true);
+      }
+      return;
+    }
+    // If income is set, proceed directly
+    proceedWithMarkPaid(commitmentId, amount);
+  };
+
+  const proceedWithMarkPaid = async (commitmentId: string, amount: number) => {
     if (!user?.id) return;
     try {
       await apiRequest(`/api/commitments/${commitmentId}/pay`, {
@@ -406,6 +427,7 @@ export const RefactoredDashboard = () => {
     .filter(c => c.isPaid)
     .reduce((sum, c) => sum + (parseFloat(c.amountPaid || c.amount) || 0), 0);
   const availableBalance = monthlyIncome - paidCommitments;
+  const unpaidCount = activeCommitments.filter(c => !c.isPaid).length;
 
   if (loading) {
     return (
@@ -496,17 +518,20 @@ export const RefactoredDashboard = () => {
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Quick Actions</p>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="mt-2 hidden sm:flex"
-                    onClick={() => setShowCommitmentForm(true)}
+                  <p className="text-sm text-muted-foreground">Unpaid Commitments</p>
+                  <p
+                    data-testid="unpaid-count"
+                    className={`text-xl sm:text-2xl font-bold ${unpaidCount > 0 ? 'text-destructive' : 'text-income'}`}
+                    aria-label={`${unpaidCount} unpaid commitment${unpaidCount === 1 ? '' : 's'}`}
                   >
-                    <PlusCircle className="h-4 w-4 mr-1" />
-                    Add Commitment
-                  </Button>
-                  <div className="mt-2 text-xs text-muted-foreground sm:hidden">Use the + button to add</div>
+                    {unpaidCount}
+                  </p>
+                </div>
+                <div className={`p-2 sm:p-3 rounded-full ${unpaidCount > 0 ? 'bg-destructive/10' : 'bg-accent/10'}`}>
+                  <AlertCircle
+                    className={`h-5 w-5 sm:h-6 sm:w-6 ${unpaidCount > 0 ? 'text-destructive' : 'text-accent'}`}
+                    aria-hidden="true"
+                  />
                 </div>
               </div>
             </CardContent>
@@ -600,6 +625,22 @@ export const RefactoredDashboard = () => {
           currentMonth={currentMonth}
           onConfirm={handleConfirmDelete}
           onCancel={handleCancelDelete}
+        />
+
+        <IncomeWarningModal
+          isOpen={showIncomeWarning}
+          commitment={commitmentForWarning}
+          onContinue={async () => {
+            if (commitmentForWarning) {
+              await proceedWithMarkPaid(commitmentForWarning.id, commitmentForWarning.amount);
+              setShowIncomeWarning(false);
+              setCommitmentForWarning(null);
+            }
+          }}
+          onCancel={() => {
+            setShowIncomeWarning(false);
+            setCommitmentForWarning(null);
+          }}
         />
       </div>
     </Layout>

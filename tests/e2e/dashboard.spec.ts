@@ -51,6 +51,20 @@ async function getTotalCommitmentsCount(page: Page): Promise<number> {
   return parseInt(cleaned, 10) || 0;
 }
 
+async function handleIncomeWarningIfPresent(page: Page): Promise<boolean> {
+  // Check if income warning modal appears (happens when income is 0)
+  const warningModalTitle = page.locator('title:has-text("No Income Set")');
+  const continueButton = page.locator('button:has-text("Continue Anyway")');
+
+  // If the warning modal appears, click "Continue Anyway"
+  if (await continueButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await continueButton.click();
+    await page.waitForTimeout(500); // Wait for modal to close
+    return true;
+  }
+  return false;
+}
+
 test.describe('Dashboard totals — commitment CRUD', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
@@ -108,8 +122,11 @@ test.describe('Dashboard totals — commitment CRUD', () => {
     await expect(markPaidBtn).toBeVisible();
     await markPaidBtn.click();
 
+    // Handle income warning modal if it appears (when income is 0)
+    await handleIncomeWarningIfPresent(page);
+
     // Wait for "Mark Unpaid" to appear (indicates paid state)
-    await page.waitForSelector('button:has-text("Mark Unpaid")', { state: 'visible' });
+    await page.waitForSelector('button:has-text("Mark Unpaid")', { state: 'visible', timeout: 10000 });
     await page.waitForLoadState('networkidle');
 
     // Wait for paid amount to actually increase
@@ -145,13 +162,17 @@ test.describe('Dashboard totals — commitment CRUD', () => {
     const markPaidBtn = commitmentCard.locator('button:has-text("Mark Paid")').first();
     await expect(markPaidBtn).toBeVisible();
     await markPaidBtn.click();
+
+    // Handle income warning modal if it appears (when income is 0)
+    await handleIncomeWarningIfPresent(page);
+
     await page.waitForTimeout(500);
 
     const paidAfterMarking = await getPaidAmount(page);
 
-    // Now mark it as unpaid - find the same commitment card
+    // Wait for "Mark Unpaid" button to be visible (indicates commitment is paid)
     const markUnpaidBtn = commitmentCard.locator('button:has-text("Mark Unpaid")').first();
-    await expect(markUnpaidBtn).toBeVisible();
+    await expect(markUnpaidBtn).toBeVisible({ timeout: 10000 });
     await markUnpaidBtn.click();
 
     // Wait for operation to complete
@@ -520,7 +541,6 @@ test.describe('Dashboard — month selector', () => {
   });
 });
 
-
 test.describe('Monthly Budget Limit', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
@@ -558,7 +578,7 @@ test.describe('Monthly Budget Limit', () => {
   test('warning banner shown when commitments exceed 80% of budget limit', async ({ page }) => {
     // Get current total commitments to calculate appropriate budget
     const currentTotal = await getTotalCommitmentsAmount(page);
-    
+
     // Add a commitment of 900
     await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
     await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
@@ -572,7 +592,7 @@ test.describe('Monthly Budget Limit', () => {
     // Calculate new total and set budget so we're at 90% (trigger warning at 80%)
     const newTotal = currentTotal + 900;
     const budgetLimit = Math.ceil(newTotal / 0.9); // Set budget so current total is 90%
-    
+
     // Set the calculated budget limit
     await page.click('[data-testid="set-budget-btn"]');
     await expect(page.locator('input#budget')).toBeVisible({ timeout: 5000 });
@@ -588,7 +608,7 @@ test.describe('Monthly Budget Limit', () => {
   test('over-budget alert shown when commitments exceed budget limit', async ({ page }) => {
     // Get current total commitments
     const currentTotal = await getTotalCommitmentsAmount(page);
-    
+
     // Add a commitment of 1200
     await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
     await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
@@ -602,7 +622,7 @@ test.describe('Monthly Budget Limit', () => {
     // Calculate new total and set budget lower to trigger over-budget alert
     const newTotal = currentTotal + 1200;
     const budgetLimit = Math.floor(newTotal * 0.5); // Set budget at 50% of total
-    
+
     // Set budget lower than total commitments
     await page.click('[data-testid="set-budget-btn"]');
     await expect(page.locator('input#budget')).toBeVisible({ timeout: 5000 });
@@ -632,5 +652,198 @@ test.describe('Monthly Budget Limit', () => {
     await expect(page.locator('[data-testid="budget-over-alert"]')).not.toBeVisible({ timeout: 3000 });
     await expect(page.locator('[data-testid="budget-warning"]')).not.toBeVisible({ timeout: 3000 });
     await expect(page.locator('[data-testid="budget-limit-section"]')).not.toBeVisible({ timeout: 3000 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unpaid Commitment Counter & Overdue Highlighting
+// ---------------------------------------------------------------------------
+
+async function getUnpaidCount(page: Page): Promise<number> {
+  const el = page.locator('[data-testid="unpaid-count"]');
+  await el.waitFor({ state: 'visible', timeout: 5000 });
+  const text = await el.innerText();
+  return parseInt(text.replace(/\D/g, ''), 10) || 0;
+}
+
+test.describe('Dashboard — unpaid commitment counter', () => {
+  test.beforeEach(async ({ page }) => {
+    await login(page);
+  });
+
+  test('unpaid counter is visible on the dashboard', async ({ page }) => {
+    const counter = page.locator('[data-testid="unpaid-count"]');
+    await expect(counter).toBeVisible({ timeout: 7000 });
+  });
+
+  test('adding a commitment increments the unpaid counter', async ({ page }) => {
+    const before = await getUnpaidCount(page);
+
+    await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
+    await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
+    await page.fill('input#title', `Unpaid Counter Test ${Date.now()}`);
+    await page.fill('input#amount', '200');
+    await page.locator('button:has-text("Select a category")').first().click();
+    await page.locator('[role="option"]:has-text("Other")').first().click();
+    await page.click('button[type="submit"]');
+    await page.waitForLoadState('networkidle');
+
+    // Wait for the unpaid counter to actually increase
+    let after = await getUnpaidCount(page);
+    let attempts = 0;
+    while (after <= before && attempts < 15) {
+      await page.waitForTimeout(300);
+      after = await getUnpaidCount(page);
+      attempts++;
+    }
+
+    expect(after).toBe(before + 1);
+  });
+
+  test('marking a commitment as paid decrements the unpaid counter', async ({ page }) => {
+    // Ensure there is at least one unpaid commitment
+    await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
+    await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
+    await page.fill('input#title', `Pay Test ${Date.now()}`);
+    await page.fill('input#amount', '150');
+    await page.locator('button:has-text("Select a category")').first().click();
+    await page.locator('[role="option"]:has-text("Other")').first().click();
+    await page.click('button[type="submit"]');
+    await page.waitForLoadState('networkidle');
+
+    // Wait for the unpaid counter to update after creating commitment
+    await page.waitForTimeout(500);
+
+    let before = await getUnpaidCount(page);
+    let attempts = 0;
+    // Ensure the unpaid counter has been updated with the new commitment
+    while (before === 0 && attempts < 5) {
+      await page.waitForTimeout(300);
+      before = await getUnpaidCount(page);
+      attempts++;
+    }
+    expect(before).toBeGreaterThan(0);
+
+    // Mark the first unpaid commitment as paid
+    const markPaidBtn = page.locator('[data-testid="section-pending"] button:has-text("Mark Paid")').first();
+    await markPaidBtn.click();
+
+    // Handle income warning modal if it appears (when income is 0)
+    await handleIncomeWarningIfPresent(page);
+
+    await page.waitForLoadState('networkidle');
+
+    // Wait for the unpaid counter to decrement after marking as paid
+    let after = await getUnpaidCount(page);
+    attempts = 0;
+    while (after >= before && attempts < 15) {
+      await page.waitForTimeout(300);
+      after = await getUnpaidCount(page);
+      attempts++;
+    }
+
+    expect(after).toBe(before - 1);
+  });
+
+  test('deleting an unpaid commitment decrements the unpaid counter', async ({ page }) => {
+    // Ensure there is at least one unpaid commitment
+    await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
+    await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
+    await page.fill('input#title', `Delete Unpaid Test ${Date.now()}`);
+    await page.fill('input#amount', '75');
+    await page.locator('button:has-text("Select a category")').first().click();
+    await page.locator('[role="option"]:has-text("Other")').first().click();
+    await page.click('button[type="submit"]');
+    await page.waitForLoadState('networkidle');
+
+    // Wait for the unpaid counter to update after creating commitment
+    await page.waitForTimeout(500);
+
+    let before = await getUnpaidCount(page);
+    let attempts = 0;
+    // Ensure there's at least one unpaid commitment to delete
+    while (before === 0 && attempts < 5) {
+      await page.waitForTimeout(500);
+      before = await getUnpaidCount(page);
+      attempts++;
+    }
+    expect(before).toBeGreaterThan(0);
+
+    // Find the pending section and locate the delete button (trash icon button)
+    const pendingSection = page.locator('[data-testid="section-pending"]').first();
+    const deleteButton = pendingSection
+      .locator('button')
+      .filter({ has: page.locator('svg') })
+      .last();
+
+    await expect(deleteButton).toBeVisible({ timeout: 10000 });
+    await deleteButton.click();
+
+    // Confirm deletion in the modal
+    const confirmButton = page.locator('button:has-text("Delete"), button:has-text("Confirm")').first();
+    await expect(confirmButton).toBeVisible({ timeout: 5000 });
+    await confirmButton.click();
+    await page.waitForLoadState('networkidle');
+
+    // Wait for the unpaid counter to decrement after deletion
+    let after = await getUnpaidCount(page);
+    attempts = 0;
+    while (after >= before && attempts < 15) {
+      await page.waitForTimeout(300);
+      after = await getUnpaidCount(page);
+      attempts++;
+    }
+
+    expect(after).toBe(before - 1);
+  });
+
+  test('unpaid commitments badge appears in the commitments list header when there are unpaid items', async ({
+    page,
+  }) => {
+    // Ensure there is at least one unpaid commitment
+    await page.click('button:has-text("Add Commitment"), button:has-text("Add New")');
+    await expect(page.locator('input#title')).toBeVisible({ timeout: 5000 });
+    await page.fill('input#title', `Badge Test ${Date.now()}`);
+    await page.fill('input#amount', '100');
+    await page.locator('button:has-text("Select a category")').first().click();
+    await page.locator('[role="option"]:has-text("Other")').first().click();
+    await page.click('button[type="submit"]');
+    await page.waitForLoadState('networkidle');
+
+    const badge = page.locator('[data-testid="unpaid-commitments-badge"]');
+    await expect(badge).toBeVisible({ timeout: 5000 });
+  });
+});
+
+test.describe('Dashboard — overdue commitment highlighting', () => {
+  test.beforeEach(async ({ page }) => {
+    await login(page);
+  });
+
+  test('overdue items are NOT shown in the current month', async ({ page }) => {
+    const overdueItems = page.locator('[data-testid="overdue-commitment-item"]');
+    // Current month view should have no overdue items
+    await expect(overdueItems).toHaveCount(0, { timeout: 5000 });
+  });
+
+  test('historical month shows overdue badge for unpaid commitments', async ({ page }) => {
+    // Navigate to a previous month
+    await page.click('[data-testid="month-prev"]');
+    await page.waitForLoadState('networkidle');
+
+    // If there are unpaid commitments in the past month they should be marked overdue
+    const overdueItems = page.locator('[data-testid="overdue-commitment-item"]');
+    const unpaidBadge = page.locator('[data-testid="unpaid-commitments-badge"]');
+    const count = await overdueItems.count();
+
+    if (count > 0) {
+      // Every unpaid item in a past month must carry the overdue styling
+      await expect(overdueItems.first()).toBeVisible();
+      // The list header badge should also be present
+      await expect(unpaidBadge).toBeVisible({ timeout: 3000 });
+    } else {
+      // No unpaid items in the historical month — badge should not be visible
+      await expect(unpaidBadge).not.toBeVisible({ timeout: 3000 });
+    }
   });
 });

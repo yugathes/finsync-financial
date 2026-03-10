@@ -71,6 +71,19 @@ async function toggleRecurringSwitch(page: Page) {
   await recurringSwitch.click();
 }
 
+async function handleIncomeWarningIfPresent(page: Page): Promise<boolean> {
+  // Check if income warning modal appears (happens when income is 0)
+  const continueButton = page.locator('button:has-text("Continue Anyway")');
+  
+  // If the warning modal appears, click "Continue Anyway"
+  if (await continueButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await continueButton.click();
+    await page.waitForTimeout(500); // Wait for modal to close
+    return true;
+  }
+  return false;
+}
+
 test.describe('Commitment CRUD operations', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
@@ -198,7 +211,11 @@ test.describe('Dashboard recalculates correctly after each operation', () => {
     const markPaidBtn = page.locator('button:has-text("Mark Paid")').first();
     if (await markPaidBtn.isVisible()) {
       await markPaidBtn.click();
-      await page.waitForSelector('button:has-text("Mark Unpaid")', { state: 'visible' });
+
+      // Handle income warning modal if it appears (when income is 0)
+      await handleIncomeWarningIfPresent(page);
+
+      await page.waitForSelector('button:has-text("Mark Unpaid")', { state: 'visible', timeout: 10000 });
       await page.waitForLoadState('networkidle');
 
       // Wait for paid amount to actually increase
