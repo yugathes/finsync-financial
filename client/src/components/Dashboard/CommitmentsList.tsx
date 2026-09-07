@@ -166,7 +166,11 @@ export const CommitmentsList = ({
             </span>
           </div>
         )}
-        <div className="mt-4 grid grid-cols-4 gap-1 rounded-lg bg-slate-100 p-1" role="group" aria-label="Commitment status filter">
+        <div
+          className="mt-4 grid grid-cols-4 gap-1 rounded-lg bg-slate-100 p-1"
+          role="group"
+          aria-label="Commitment status filter"
+        >
           {(['all', 'upcoming', 'overdue', 'paid'] as CommitmentFilter[]).map(option => {
             const unavailable = (option === 'overdue' && !isHistorical) || (option === 'upcoming' && isHistorical);
             return (
@@ -219,7 +223,9 @@ export const CommitmentsList = ({
                   }`}
                 >
                   {overdueCount > 0 && <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />}
-                  {overdueCount > 0 ? `Overdue (${visibleUnpaidCommitments.length})` : `Upcoming (${visibleUnpaidCommitments.length})`}
+                  {overdueCount > 0
+                    ? `Overdue (${visibleUnpaidCommitments.length})`
+                    : `Upcoming (${visibleUnpaidCommitments.length})`}
                 </h3>
                 <TypeGroup
                   label="Commitments"
@@ -255,7 +261,9 @@ export const CommitmentsList = ({
             )}
 
             {/* Divider */}
-            {visibleUnpaidCommitments.length > 0 && visiblePaidCommitments.length > 0 && <div className="border-t my-6"></div>}
+            {visibleUnpaidCommitments.length > 0 && visiblePaidCommitments.length > 0 && (
+              <div className="border-t my-6"></div>
+            )}
 
             {/* Paid Commitments — grouped by type */}
             {visiblePaidCommitments.length > 0 && (
@@ -394,8 +402,11 @@ const CommitmentItem = ({
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className={`text-lg font-bold ${commitment.isPaid ? 'text-muted-foreground' : isOverdue ? 'text-red-700' : ''}`}>
-            {currency} {commitment.amount.toLocaleString()}
+          <div className={`text-lg font-bold ${isOverdue ? 'text-red-700' : ''}`}>{currency}</div>
+          <span
+            className={`text-lg font-bold ${commitment.isPaid ? 'text-muted-foreground' : isOverdue ? 'text-red-700' : ''}`}
+          >
+            {commitment.amount.toLocaleString()}
           </span>
         </div>
       </div>
