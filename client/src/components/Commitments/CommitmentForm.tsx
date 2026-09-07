@@ -5,7 +5,6 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { X, DollarSign, Tag, Calendar } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 
@@ -131,7 +130,7 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible, initialType = 'c
               <DollarSign className="h-5 w-5 text-primary" />
               {formData.type === 'expenses' ? 'Add New Expense' : 'Add New Commitment'}
             </CardTitle>
-            <Button variant="ghost" size="icon" onClick={onCancel} className="touch-target">
+            <Button variant="ghost" size="icon" onClick={onCancel} aria-label="Close commitment form">
               <X className="h-5 w-5" />
             </Button>
           </div>
@@ -169,23 +168,29 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible, initialType = 'c
             {/* Type Selection */}
             <div className="space-y-2">
               <Label>Commitment Type</Label>
-              <div className="flex flex-wrap gap-2">
-                <Badge
+              <div className="grid grid-cols-2 gap-2" role="group" aria-label="Commitment type">
+                <Button
+                  type="button"
                   variant={formData.type === 'commitment' ? 'default' : 'outline'}
-                  className="cursor-pointer px-4 py-2 transition-smooth touch-target"
+                  size="sm"
+                  className="h-auto min-h-10 whitespace-normal px-3 py-2"
                   onClick={() => setFormData(prev => ({ ...prev, type: 'commitment' }))}
+                  aria-pressed={formData.type === 'commitment'}
                 >
                   <Calendar className="h-4 w-4 mr-1" />
                   Commitment (Fixed)
-                </Badge>
-                <Badge
+                </Button>
+                <Button
+                  type="button"
                   variant={formData.type === 'expenses' ? 'default' : 'outline'}
-                  className="cursor-pointer px-4 py-2 transition-smooth touch-target"
+                  size="sm"
+                  className="h-auto min-h-10 whitespace-normal px-3 py-2"
                   onClick={() => setFormData(prev => ({ ...prev, type: 'expenses' }))}
+                  aria-pressed={formData.type === 'expenses'}
                 >
                   <Tag className="h-4 w-4 mr-1" />
                   Expenses
-                </Badge>
+                </Button>
               </div>
               <p className="text-xs text-muted-foreground">
                 {formData.type === 'commitment'

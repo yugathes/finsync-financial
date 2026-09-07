@@ -13,7 +13,6 @@ import {
   Settings,
   Users,
   WalletCards,
-  X,
 } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -175,7 +174,7 @@ export const Layout = ({ children, title = 'FinSync', showHero = false }: Layout
             onClick={() => navigate('/categories')}
           />
           <MobileNavButton
-            active={location.pathname === '/groups'}
+            active={location.pathname === '/groups' || location.pathname === '/reports'}
             icon={<MoreHorizontal />}
             label="More"
             onClick={() => setMoreOpen(true)}
