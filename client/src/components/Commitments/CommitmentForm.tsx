@@ -18,9 +18,10 @@ interface CommitmentFormProps {
     recurring?: boolean;
     shared?: boolean;
     groupId?: string;
-  }) => void;
+  }) => Promise<void>;
   onCancel: () => void;
   isVisible: boolean;
+  initialType?: 'commitment' | 'expenses';
 }
 
 interface Group {
@@ -41,7 +42,7 @@ const categories = [
   'Other',
 ];
 
-export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentFormProps) => {
+export const CommitmentForm = ({ onSubmit, onCancel, isVisible, initialType = 'commitment' }: CommitmentFormProps) => {
   const { user } = useSession();
   const [groups, setGroups] = useState<Group[]>([]);
   const [formData, setFormData] = useState<{
@@ -81,7 +82,13 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
     loadGroups();
   }, [user?.id, isVisible]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (isVisible) {
+      setFormData(prev => ({ ...prev, type: initialType }));
+    }
+  }, [initialType, isVisible]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.amount || !formData.category) return;
 
@@ -91,7 +98,7 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
       return;
     }
 
-    onSubmit({
+    await onSubmit({
       title: formData.title,
       amount: parseFloat(formData.amount),
       type: formData.type,
@@ -116,13 +123,13 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4 animate-fade-in">
-      <Card className="w-full max-w-md bg-background animate-slide-up sm:animate-scale-in max-h-[90dvh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-0 sm:items-center sm:p-4 animate-fade-in">
+      <Card className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-xl bg-background animate-slide-up sm:rounded-lg sm:animate-scale-in">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <CardTitle className="text-xl font-semibold flex items-center gap-2">
               <DollarSign className="h-5 w-5 text-primary" />
-              Add New Commitment
+              {formData.type === 'expenses' ? 'Add New Expense' : 'Add New Commitment'}
             </CardTitle>
             <Button variant="ghost" size="icon" onClick={onCancel} className="touch-target">
               <X className="h-5 w-5" />
@@ -269,8 +276,8 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
               <Button type="button" variant="outline" onClick={onCancel} className="flex-1 touch-target">
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" className="flex-1 touch-target">
-                Add Commitment
+              <Button type="submit" variant="primary" className="flex-1">
+                {formData.type === 'expenses' ? 'Add Expense' : 'Add Commitment'}
               </Button>
             </div>
           </form>

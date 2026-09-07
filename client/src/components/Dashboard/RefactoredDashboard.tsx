@@ -16,6 +16,7 @@ import {
   AlertCircle,
   ArrowRight,
   Calendar,
+  CheckCircle2,
   CircleDollarSign,
   History,
   Landmark,
@@ -67,6 +68,10 @@ export const RefactoredDashboard = () => {
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [showCommitmentForm, setShowCommitmentForm] = useState(false);
+  const [commitmentFormType, setCommitmentFormType] = useState<'commitment' | 'expenses'>('commitment');
+  const [addedCommitment, setAddedCommitment] = useState<{ title: string; amount: number; category: string } | null>(
+    null
+  );
   // COMMENTED OUT: Import functionality disabled
   // const [showImportWizard, setShowImportWizard] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -170,6 +175,7 @@ export const RefactoredDashboard = () => {
       if (action === 'income') {
         setShowIncomeModal(true);
       } else {
+        setCommitmentFormType(action === 'expense' ? 'expenses' : 'commitment');
         setShowCommitmentForm(true);
       }
     };
@@ -261,6 +267,11 @@ export const RefactoredDashboard = () => {
       });
       await loadDashboardData();
       setShowCommitmentForm(false);
+      setAddedCommitment({
+        title: newCommitment.title,
+        amount: newCommitment.amount,
+        category: newCommitment.category,
+      });
       toast({
         title: 'Commitment added!',
         description: `${newCommitment.title} has been added to your list`,
@@ -636,7 +647,10 @@ export const RefactoredDashboard = () => {
             currency="MYR"
             onMarkPaid={handleMarkPaid}
             onMarkUnpaid={handleMarkUnpaid}
-            onAddNew={() => setShowCommitmentForm(true)}
+            onAddNew={() => {
+              setCommitmentFormType('commitment');
+              setShowCommitmentForm(true);
+            }}
             onDelete={handleDeleteCommitment}
             isHistorical={isHistoricalMonth}
           />
@@ -647,7 +661,51 @@ export const RefactoredDashboard = () => {
           isVisible={showCommitmentForm}
           onSubmit={handleAddCommitment}
           onCancel={() => setShowCommitmentForm(false)}
+          initialType={commitmentFormType}
         />
+
+        {addedCommitment && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-0 sm:items-center sm:p-4">
+            <Card className="w-full max-w-sm rounded-t-xl bg-white text-center sm:rounded-lg">
+              <CardContent className="space-y-5 p-6 pt-10">
+                <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                  <CheckCircle2 className="h-8 w-8" />
+                </span>
+                <div>
+                  <h2 className="text-xl font-bold text-primary">Commitment added</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">Your monthly plan has been updated.</p>
+                </div>
+                <div className="rounded-lg bg-blue-50 p-4 text-left">
+                  <p className="font-semibold text-slate-800">{addedCommitment.title}</p>
+                  <p className="mt-1 text-sm text-slate-500">{addedCommitment.category}</p>
+                  <p className="mt-2 font-bold text-primary">MYR {addedCommitment.amount.toLocaleString()}</p>
+                </div>
+                <div className="space-y-2">
+                  <Button
+                    className="w-full"
+                    onClick={() => {
+                      setAddedCommitment(null);
+                      document.getElementById('commitments')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                  >
+                    View commitments
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      setAddedCommitment(null);
+                      setCommitmentFormType('commitment');
+                      setShowCommitmentForm(true);
+                    }}
+                  >
+                    Add another
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         <IncomeModal
           isVisible={showIncomeModal}
