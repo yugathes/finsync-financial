@@ -168,7 +168,12 @@ export const Layout = ({ children, title = 'FinSync', showHero = false }: Layout
             </span>
             Add
           </button>
-          <MobileNavButton active={false} icon={<BarChart3 />} label="Categories" onClick={() => setMoreOpen(true)} />
+          <MobileNavButton
+            active={location.pathname === '/categories'}
+            icon={<BarChart3 />}
+            label="Categories"
+            onClick={() => navigate('/categories')}
+          />
           <MobileNavButton
             active={location.pathname === '/groups'}
             icon={<MoreHorizontal />}
@@ -232,7 +237,12 @@ export const Layout = ({ children, title = 'FinSync', showHero = false }: Layout
               onClick={() => navigateTo('/groups')}
             />
             <MoreMenuButton icon={<BarChart3 />} label="Reports" disabled />
-            <MoreMenuButton icon={<WalletCards />} label="Categories" disabled />
+            <MoreMenuButton
+              icon={<WalletCards />}
+              label="Categories"
+              active={location.pathname === '/categories'}
+              onClick={() => navigateTo('/categories')}
+            />
             <MoreMenuButton icon={<Settings />} label="Settings" disabled />
           </div>
           <div className="absolute inset-x-5 bottom-7 border-t border-blue-400/20 pt-5">
