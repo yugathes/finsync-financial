@@ -236,7 +236,12 @@ export const Layout = ({ children, title = 'FinSync', showHero = false }: Layout
               active={location.pathname === '/groups'}
               onClick={() => navigateTo('/groups')}
             />
-            <MoreMenuButton icon={<BarChart3 />} label="Reports" disabled />
+            <MoreMenuButton
+              icon={<BarChart3 />}
+              label="Reports"
+              active={location.pathname === '/reports'}
+              onClick={() => navigateTo('/reports')}
+            />
             <MoreMenuButton
               icon={<WalletCards />}
               label="Categories"
