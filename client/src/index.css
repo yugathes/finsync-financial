@@ -131,8 +131,17 @@
     @apply border-border;
   }
 
+  html {
+    /* Prevent horizontal overflow on all mobile browsers */
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     @apply bg-background text-foreground;
+    /* Prevent horizontal scroll; enable smooth vertical scrolling */
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -184,5 +193,24 @@
   
   .animate-scale-in {
     animation: scale-in 0.2s ease-out;
+  }
+
+  /* ── Mobile responsiveness helpers ── */
+
+  /* Ensure all interactive elements have a minimum 44 × 44 px tap target */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Prevent text from overflowing narrow containers */
+  .text-balance {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  /* Safe-area padding for notched devices (iOS) */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }

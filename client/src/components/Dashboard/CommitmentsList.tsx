@@ -112,16 +112,16 @@ export const CommitmentsList = ({
   return (
     <Card className="bg-white shadow-lg border-0 animate-fade-in">
       <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-lg font-medium text-blue-800">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <CardTitle className="text-lg font-medium text-blue-800 leading-tight">
               {isHistorical ? 'Historical Commitments' : "This Month's Commitments"}
             </CardTitle>
             {unpaidCommitments.length > 0 && (
               <Badge
                 data-testid="unpaid-commitments-badge"
                 variant="secondary"
-                className={`text-xs font-semibold ${
+                className={`text-xs font-semibold flex-shrink-0 ${
                   overdueCount > 0
                     ? 'bg-red-100 text-red-700 border border-red-300'
                     : 'bg-amber-100 text-amber-700 border border-amber-300'
@@ -359,9 +359,8 @@ const CommitmentItem = ({
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <div className={`text-lg font-bold ${isOverdue ? 'text-red-700' : ''}`}>{currency}</div>
           <span className={`text-lg font-bold ${commitment.isPaid ? 'text-muted-foreground' : isOverdue ? 'text-red-700' : ''}`}>
-            {commitment.amount.toLocaleString()}
+            {currency} {commitment.amount.toLocaleString()}
           </span>
         </div>
       </div>
@@ -383,7 +382,7 @@ const CommitmentItem = ({
             onClick={() => onMarkUnpaid && onMarkUnpaid(commitment.id)}
             disabled={!onMarkUnpaid || isHistorical}
             title={isHistorical ? 'Cannot modify historical records' : undefined}
-            className="flex-1"
+            className="flex-1 touch-target"
           >
             <Undo2 className="h-4 w-4 mr-1" />
             <span>Mark Unpaid</span>
@@ -395,7 +394,7 @@ const CommitmentItem = ({
             onClick={() => onMarkPaid(commitment.id, commitment.amount)}
             disabled={isHistorical}
             title={isHistorical ? 'Cannot modify historical records' : undefined}
-            className="flex-1"
+            className="flex-1 touch-target"
           >
             <Check className="h-4 w-4 mr-1" />
             <span>Mark Paid</span>
@@ -409,7 +408,7 @@ const CommitmentItem = ({
             onClick={() => onDelete(commitment.id)}
             disabled={isHistorical}
             title={isHistorical ? 'Cannot modify historical records' : undefined}
-            className="text-red-500 hover:text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:pointer-events-none"
+            className="text-red-500 hover:text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:pointer-events-none touch-target"
           >
             <Trash2 className="h-4 w-4" />
           </Button>

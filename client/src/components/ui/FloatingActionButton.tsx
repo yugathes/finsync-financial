@@ -9,8 +9,10 @@ export const FloatingActionButton = ({ onClick }: FloatingActionButtonProps) => 
   return (
     <Button
       onClick={onClick}
-      className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow bg-blue-600 hover:bg-blue-700 text-white z-40 sm:hidden"
+      className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow bg-blue-600 hover:bg-blue-700 text-white z-40 sm:hidden safe-bottom"
+      style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
       size="icon"
+      aria-label="Add new commitment"
     >
       <Plus className="h-6 w-6" />
     </Button>

@@ -117,14 +117,14 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4 animate-fade-in">
-      <Card className="w-full max-w-md bg-background animate-slide-up sm:animate-scale-in">
+      <Card className="w-full max-w-md bg-background animate-slide-up sm:animate-scale-in max-h-[90dvh] overflow-y-auto">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <CardTitle className="text-xl font-semibold flex items-center gap-2">
               <DollarSign className="h-5 w-5 text-primary" />
               Add New Commitment
             </CardTitle>
-            <Button variant="ghost" size="icon" onClick={onCancel}>
+            <Button variant="ghost" size="icon" onClick={onCancel} className="touch-target">
               <X className="h-5 w-5" />
             </Button>
           </div>
@@ -140,7 +140,7 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
                 value={formData.title}
                 onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="e.g., Rent, Groceries, Phone Bill"
-                className="text-lg"
+                className="text-base"
               />
             </div>
 
@@ -150,21 +150,22 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
               <Input
                 id="amount"
                 type="number"
+                inputMode="decimal"
                 step="0.01"
                 value={formData.amount}
                 onChange={e => setFormData(prev => ({ ...prev, amount: e.target.value }))}
                 placeholder="0.00"
-                className="text-lg"
+                className="text-base"
               />
             </div>
 
             {/* Type Selection */}
             <div className="space-y-2">
               <Label>Commitment Type</Label>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Badge
                   variant={formData.type === 'commitment' ? 'default' : 'outline'}
-                  className="cursor-pointer px-4 py-2 transition-smooth"
+                  className="cursor-pointer px-4 py-2 transition-smooth touch-target"
                   onClick={() => setFormData(prev => ({ ...prev, type: 'commitment' }))}
                 >
                   <Calendar className="h-4 w-4 mr-1" />
@@ -172,7 +173,7 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
                 </Badge>
                 <Badge
                   variant={formData.type === 'expenses' ? 'default' : 'outline'}
-                  className="cursor-pointer px-4 py-2 transition-smooth"
+                  className="cursor-pointer px-4 py-2 transition-smooth touch-target"
                   onClick={() => setFormData(prev => ({ ...prev, type: 'expenses' }))}
                 >
                   <Tag className="h-4 w-4 mr-1" />
@@ -208,8 +209,8 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
 
             {/* Recurring and Shared Options */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5 min-w-0">
                   <Label htmlFor="recurring">Recurring Monthly</Label>
                   <p className="text-xs text-muted-foreground">Automatically appears every month</p>
                 </div>
@@ -220,8 +221,8 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5 min-w-0">
                   <Label htmlFor="shared">Shared Commitment</Label>
                   <p className="text-xs text-muted-foreground">Split with family/roommates</p>
                 </div>
@@ -265,10 +266,10 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
+              <Button type="button" variant="outline" onClick={onCancel} className="flex-1 touch-target">
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" className="flex-1">
+              <Button type="submit" variant="primary" className="flex-1 touch-target">
                 Add Commitment
               </Button>
             </div>

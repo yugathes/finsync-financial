@@ -124,7 +124,7 @@ class CommitmentService {
         return requestedMonth === commitmentStartMonth;
       });
 
-      console.log('Filtered commitments for month:', filteredCommitments.length);
+      // console.log('Filtered commitments for month:', filteredCommitments.length);
 
       // Map commitments with payment status
       const commitmentsWithPayments = filteredCommitments.map((commitment: any) => {

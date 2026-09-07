@@ -21,51 +21,54 @@ export const Layout = ({ children, title = "FinSync", showHero = false }: Layout
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Header */}
       <header className="bg-gradient-hero shadow-elevation sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 md:hidden">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+              <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 md:hidden flex-shrink-0 touch-target">
                 <Menu className="h-6 w-6" />
               </Button>
-              <h1 className="text-2xl font-bold text-white">{title}</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-white truncate">{title}</h1>
             </div>
-            
-            <div className="flex items-center space-x-2">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-white hover:bg-white/20"
+
+            <nav className="flex items-center gap-1 sm:gap-2 flex-shrink-0" aria-label="Main navigation">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white hover:bg-white/20 touch-target"
                 onClick={() => navigate('/dashboard')}
                 title="Home"
+                aria-label="Go to dashboard"
               >
                 <Home className="h-5 w-5" />
               </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-white hover:bg-white/20"
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white hover:bg-white/20 touch-target"
                 onClick={() => navigate('/groups')}
                 title="Groups"
+                aria-label="Go to groups"
               >
                 <Users className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="text-white hover:bg-white/20">
+              <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 touch-target" aria-label="Settings">
                 <Settings className="h-5 w-5" />
               </Button>
               {session && (
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="text-white hover:bg-white/20"
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20 touch-target"
                   onClick={handleLogout}
+                  aria-label="Sign out"
                 >
                   <LogOut className="h-5 w-5" />
                 </Button>
               )}
-            </div>
+            </nav>
           </div>
         </div>
       </header>
@@ -73,8 +76,8 @@ export const Layout = ({ children, title = "FinSync", showHero = false }: Layout
       {/* Hero Section */}
       {showHero && (
         <section className="relative">
-          <div 
-            className="h-64 bg-cover bg-center bg-no-repeat"
+          <div
+            className="h-40 sm:h-64 bg-cover bg-center bg-no-repeat"
             style={{ backgroundImage: `url(${heroImage})` }}
           >
             <div className="absolute inset-0 bg-gradient-primary/20"></div>
@@ -83,7 +86,7 @@ export const Layout = ({ children, title = "FinSync", showHero = false }: Layout
       )}
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {children}
       </main>
     </div>
