@@ -51,6 +51,14 @@ export const Layout = ({ children, title = 'FinSync', showHero = false }: Layout
     navigate(path);
   };
 
+  const navigateToCommitments = () => {
+    navigate('/dashboard#commitments');
+    window.setTimeout(
+      () => document.getElementById('commitments')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+      0
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-0">
       {/* Header */}
@@ -148,7 +156,7 @@ export const Layout = ({ children, title = 'FinSync', showHero = false }: Layout
             active={isDashboard && location.hash === '#commitments'}
             icon={<CalendarDays />}
             label="Commitments"
-            onClick={() => navigate('/dashboard#commitments')}
+            onClick={navigateToCommitments}
           />
           <button
             className="-mt-8 flex flex-col items-center gap-1 text-xs font-medium text-primary"
@@ -201,13 +209,6 @@ export const Layout = ({ children, title = 'FinSync', showHero = false }: Layout
 
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
         <SheetContent side="right" className="w-[88vw] border-0 bg-[#10294a] p-5 text-white sm:max-w-sm">
-          <button
-            className="absolute right-4 top-4 rounded-md p-2 text-blue-100 hover:bg-white/10"
-            onClick={() => setMoreOpen(false)}
-            aria-label="Close account menu"
-          >
-            <X className="h-5 w-5" />
-          </button>
           <SheetHeader className="mb-8 pr-10 text-left">
             <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-400 text-lg font-bold text-emerald-950">
               {user?.email?.slice(0, 1).toUpperCase() ?? 'F'}
