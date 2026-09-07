@@ -11,6 +11,8 @@ import LoginPage from './auth/LoginPage';
 import RegisterPage from './auth/RegisterPage';
 import DashboardPage from './pages/Dashboard';
 import GroupsPage from './pages/GroupsPage';
+import CategoriesPage from './pages/CategoriesPage';
+import ReportsPage from './pages/ReportsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const queryClient = new QueryClient();
@@ -30,6 +32,8 @@ const AppRoutes = () => {
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/groups" element={<GroupsPage />} />
+            <Route path="/categories" element={<CategoriesPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
           </Route>
 
           {/* Default route */}

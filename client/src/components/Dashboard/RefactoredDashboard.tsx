@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSession } from '../../hooks/useSession';
 import { Layout } from '@/components/Layout';
-import { BalanceCard } from './BalanceCard';
 import { CommitmentsList } from './CommitmentsList';
 import { MonthSelector } from './MonthSelector';
 import { CommitmentForm } from '../Commitments/CommitmentForm';
@@ -9,12 +8,22 @@ import { IncomeModal } from './IncomeModal';
 import { BudgetModal } from './BudgetModal';
 import { DeleteConfirmationModal } from '../Commitments/DeleteConfirmationModal';
 import { IncomeWarningModal } from './IncomeWarningModal';
-import { FloatingActionButton } from '../ui/FloatingActionButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { TrendingUp, Calendar, History, Users, AlertCircle } from 'lucide-react';
+import {
+  AlertCircle,
+  ArrowRight,
+  Calendar,
+  CheckCircle2,
+  CircleDollarSign,
+  History,
+  Landmark,
+  TrendingUp,
+  Users,
+  WalletCards,
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { toast as sonnerToast } from 'sonner';
 import { CommitmentWithStatus } from '../Commitments/CommitmentList';
@@ -59,12 +68,20 @@ export const RefactoredDashboard = () => {
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [showCommitmentForm, setShowCommitmentForm] = useState(false);
+  const [commitmentFormType, setCommitmentFormType] = useState<'commitment' | 'expenses'>('commitment');
+  const [addedCommitment, setAddedCommitment] = useState<{ title: string; amount: number; category: string } | null>(
+    null
+  );
   // COMMENTED OUT: Import functionality disabled
   // const [showImportWizard, setShowImportWizard] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [commitmentToDelete, setCommitmentToDelete] = useState<CommitmentWithStatus | null>(null);
   const [showIncomeWarning, setShowIncomeWarning] = useState(false);
-  const [commitmentForWarning, setCommitmentForWarning] = useState<{ id: string; title: string; amount: number } | null>(null);
+  const [commitmentForWarning, setCommitmentForWarning] = useState<{
+    id: string;
+    title: string;
+    amount: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Filter state
@@ -152,6 +169,21 @@ export const RefactoredDashboard = () => {
     loadDashboardData();
   }, [loadDashboardData]);
 
+  useEffect(() => {
+    const handleQuickAdd = (event: Event) => {
+      const action = (event as CustomEvent<'commitment' | 'expense' | 'income'>).detail;
+      if (action === 'income') {
+        setShowIncomeModal(true);
+      } else {
+        setCommitmentFormType(action === 'expense' ? 'expenses' : 'commitment');
+        setShowCommitmentForm(true);
+      }
+    };
+
+    window.addEventListener('finsync:quick-add', handleQuickAdd);
+    return () => window.removeEventListener('finsync:quick-add', handleQuickAdd);
+  }, []);
+
   // Budget management
   const handleUpdateBudget = async (limit: number | null) => {
     if (!user?.id) return;
@@ -235,6 +267,11 @@ export const RefactoredDashboard = () => {
       });
       await loadDashboardData();
       setShowCommitmentForm(false);
+      setAddedCommitment({
+        title: newCommitment.title,
+        amount: newCommitment.amount,
+        category: newCommitment.category,
+      });
       toast({
         title: 'Commitment added!',
         description: `${newCommitment.title} has been added to your list`,
@@ -442,18 +479,26 @@ export const RefactoredDashboard = () => {
 
   return (
     <Layout title="FinSync - Dashboard">
-      <div className="space-y-6 pb-20 sm:pb-6">
+      <div className="mx-auto max-w-6xl space-y-5 pb-20 sm:pb-6">
         {/* Welcome Section */}
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl sm:text-3xl font-bold text-primary">Welcome to FinSync</h2>
-          <p className="text-muted-foreground text-base sm:text-lg">
-            Track your commitments and stay financially organized
-          </p>
+        <div className="flex items-end justify-between gap-4 px-1 pt-1">
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-slate-500">Your monthly overview</p>
+            <h2 className="text-2xl font-bold text-primary sm:text-3xl">Good to see you</h2>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="hidden text-primary sm:flex"
+            onClick={() => setShowIncomeModal(true)}
+          >
+            Update income
+          </Button>
         </div>
 
         {/* Month Navigation */}
-        <Card className="bg-white shadow-lg border-0">
-          <CardContent className="pb-3 pt-4">
+        <Card className="border-blue-100 bg-white shadow-sm">
+          <CardContent className="pb-3 pt-3">
             <MonthSelector currentMonth={currentMonth} onChange={handleMonthChange} userId={user?.id} />
           </CardContent>
         </Card>
@@ -473,70 +518,90 @@ export const RefactoredDashboard = () => {
           </div>
         )}
 
-        {/* Balance Overview */}
-        <BalanceCard
-          income={monthlyIncome}
-          commitments={totalCommitments}
-          paidAmount={paidCommitments}
-          currency="MYR"
-          onUpdateIncome={() => setShowIncomeModal(true)}
-          budgetLimit={budgetLimit}
-          onUpdateBudget={() => setShowBudgetModal(true)}
-        />
+        {/* Financial Snapshot */}
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Financial snapshot">
+          <SummaryCard
+            label="Income"
+            value={monthlyIncome}
+            icon={<Landmark />}
+            tone="emerald"
+            onClick={() => setShowIncomeModal(true)}
+          />
+          <SummaryCard label="Committed" value={totalCommitments} icon={<WalletCards />} tone="violet" />
+          <SummaryCard label="Remaining" value={availableBalance} icon={<CircleDollarSign />} tone="blue" />
+          <SummaryCard
+            label="Unpaid"
+            value={unpaidCount}
+            icon={<AlertCircle />}
+            tone={unpaidCount > 0 ? 'rose' : 'emerald'}
+            count
+            onClick={() =>
+              document.getElementById('commitments')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }
+          />
+        </section>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card className="shadow-card">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Paid This Month</p>
-                  <p className="text-xl sm:text-2xl font-bold text-income">MYR {paidCommitments.toLocaleString()}</p>
-                </div>
-                <div className="p-2 sm:p-3 bg-accent/10 rounded-full">
-                  <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-accent" />
-                </div>
+        <Card className="border-0 bg-white shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-base font-semibold text-primary">Monthly overview</CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs text-primary"
+              onClick={() => setShowBudgetModal(true)}
+            >
+              {budgetLimit === null ? 'Set budget' : 'Edit budget'}
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex h-3 overflow-hidden rounded-full bg-slate-100" aria-label="Monthly income allocation">
+              <div
+                className="bg-emerald-500"
+                style={{
+                  width: `${monthlyIncome > 0 ? Math.min(((monthlyIncome - paidCommitments) / monthlyIncome) * 100, 100) : 0}%`,
+                }}
+              />
+              <div
+                className="bg-violet-500"
+                style={{ width: `${monthlyIncome > 0 ? Math.min((paidCommitments / monthlyIncome) * 100, 100) : 0}%` }}
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <span className="mb-1 block h-2 w-2 rounded-full bg-emerald-500" />
+                Income <strong className="ml-1 text-slate-700">MYR {monthlyIncome.toLocaleString()}</strong>
               </div>
-            </CardContent>
-          </Card>
+              <div>
+                <span className="mb-1 block h-2 w-2 rounded-full bg-violet-500" />
+                Paid <strong className="ml-1 text-slate-700">MYR {paidCommitments.toLocaleString()}</strong>
+              </div>
+              <div>
+                <span className="mb-1 block h-2 w-2 rounded-full bg-slate-300" />
+                Total <strong className="ml-1 text-slate-700">MYR {totalCommitments.toLocaleString()}</strong>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card className="shadow-card">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Commitments</p>
-                  <p className="text-xl sm:text-2xl font-bold">{activeCommitments.length}</p>
-                </div>
-                <div className="p-2 sm:p-3 bg-primary/10 rounded-full">
-                  <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-card">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Unpaid Commitments</p>
-                  <p
-                    data-testid="unpaid-count"
-                    className={`text-xl sm:text-2xl font-bold ${unpaidCount > 0 ? 'text-destructive' : 'text-income'}`}
-                    aria-label={`${unpaidCount} unpaid commitment${unpaidCount === 1 ? '' : 's'}`}
-                  >
-                    {unpaidCount}
-                  </p>
-                </div>
-                <div className={`p-2 sm:p-3 rounded-full ${unpaidCount > 0 ? 'bg-destructive/10' : 'bg-accent/10'}`}>
-                  <AlertCircle
-                    className={`h-5 w-5 sm:h-6 sm:w-6 ${unpaidCount > 0 ? 'text-destructive' : 'text-accent'}`}
-                    aria-hidden="true"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {unpaidCount > 0 && (
+          <button
+            className="flex w-full items-center gap-3 rounded-lg border border-rose-100 bg-rose-50 p-4 text-left"
+            onClick={() =>
+              document.getElementById('commitments')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+              <AlertCircle className="h-5 w-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold text-rose-800">Needs attention</span>
+              <span className="block text-sm text-rose-700">
+                {unpaidCount} unpaid commitment{unpaidCount === 1 ? '' : 's'} to review
+              </span>
+            </span>
+            <ArrowRight className="h-5 w-5 text-rose-500" />
+          </button>
+        )}
 
         {/* Filters and Actions */}
         <Card className="bg-white shadow-lg border-0">
@@ -576,25 +641,71 @@ export const RefactoredDashboard = () => {
         </Card>
 
         {/* Commitments List */}
-        <CommitmentsList
-          commitments={commitments}
-          currency="MYR"
-          onMarkPaid={handleMarkPaid}
-          onMarkUnpaid={handleMarkUnpaid}
-          onAddNew={() => setShowCommitmentForm(true)}
-          onDelete={handleDeleteCommitment}
-          isHistorical={isHistoricalMonth}
-        />
-
-        {/* Floating Action Button (Mobile Only) */}
-        <FloatingActionButton onClick={() => setShowCommitmentForm(true)} />
+        <div id="commitments">
+          <CommitmentsList
+            commitments={commitments}
+            currency="MYR"
+            onMarkPaid={handleMarkPaid}
+            onMarkUnpaid={handleMarkUnpaid}
+            onAddNew={() => {
+              setCommitmentFormType('commitment');
+              setShowCommitmentForm(true);
+            }}
+            onDelete={handleDeleteCommitment}
+            isHistorical={isHistoricalMonth}
+          />
+        </div>
 
         {/* Modals */}
         <CommitmentForm
           isVisible={showCommitmentForm}
           onSubmit={handleAddCommitment}
           onCancel={() => setShowCommitmentForm(false)}
+          initialType={commitmentFormType}
         />
+
+        {addedCommitment && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-0 sm:items-center sm:p-4">
+            <Card className="w-full max-w-sm rounded-t-xl bg-white text-center sm:rounded-lg">
+              <CardContent className="space-y-5 p-6 pt-10">
+                <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                  <CheckCircle2 className="h-8 w-8" />
+                </span>
+                <div>
+                  <h2 className="text-xl font-bold text-primary">Commitment added</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">Your monthly plan has been updated.</p>
+                </div>
+                <div className="rounded-lg bg-blue-50 p-4 text-left">
+                  <p className="font-semibold text-slate-800">{addedCommitment.title}</p>
+                  <p className="mt-1 text-sm text-slate-500">{addedCommitment.category}</p>
+                  <p className="mt-2 font-bold text-primary">MYR {addedCommitment.amount.toLocaleString()}</p>
+                </div>
+                <div className="space-y-2">
+                  <Button
+                    className="w-full"
+                    onClick={() => {
+                      setAddedCommitment(null);
+                      document.getElementById('commitments')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                  >
+                    View commitments
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      setAddedCommitment(null);
+                      setCommitmentFormType('commitment');
+                      setShowCommitmentForm(true);
+                    }}
+                  >
+                    Add another
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         <IncomeModal
           isVisible={showIncomeModal}
@@ -644,5 +755,47 @@ export const RefactoredDashboard = () => {
         />
       </div>
     </Layout>
+  );
+};
+
+const summaryTones = {
+  emerald: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
+  violet: 'bg-violet-50 text-violet-700 ring-violet-100',
+  blue: 'bg-blue-50 text-blue-700 ring-blue-100',
+  rose: 'bg-rose-50 text-rose-700 ring-rose-100',
+};
+
+const SummaryCard = ({
+  label,
+  value,
+  icon,
+  tone,
+  count = false,
+  onClick,
+}: {
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+  tone: keyof typeof summaryTones;
+  count?: boolean;
+  onClick?: () => void;
+}) => {
+  const content = (
+    <>
+      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/80 shadow-sm">{icon}</span>
+      <span className="mt-4 block text-xs font-medium opacity-80">{label}</span>
+      <span className="mt-1 block text-xl font-bold sm:text-2xl">
+        {count ? value : `MYR ${value.toLocaleString()}`}
+      </span>
+    </>
+  );
+
+  const className = `min-h-32 rounded-lg p-4 text-left ring-1 ${summaryTones[tone]} ${onClick ? 'transition-colors hover:brightness-95' : ''}`;
+  return onClick ? (
+    <button className={className} onClick={onClick}>
+      {content}
+    </button>
+  ) : (
+    <div className={className}>{content}</div>
   );
 };
