@@ -8,7 +8,6 @@ import { IncomeModal } from './IncomeModal';
 import { BudgetModal } from './BudgetModal';
 import { DeleteConfirmationModal } from '../Commitments/DeleteConfirmationModal';
 import { IncomeWarningModal } from './IncomeWarningModal';
-import { FloatingActionButton } from '../ui/FloatingActionButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -642,9 +641,6 @@ export const RefactoredDashboard = () => {
             isHistorical={isHistoricalMonth}
           />
         </div>
-
-        {/* Floating Action Button (Mobile Only) */}
-        <FloatingActionButton onClick={() => setShowCommitmentForm(true)} />
 
         {/* Modals */}
         <CommitmentForm

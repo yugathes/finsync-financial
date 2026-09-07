@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +27,8 @@ interface CommitmentsListProps {
   /** When true, the view is read-only (historical month) */
   isHistorical?: boolean;
 }
+
+type CommitmentFilter = 'all' | 'upcoming' | 'overdue' | 'paid';
 
 /** Group a list of commitments into commitment, expenses, and shared buckets. */
 function groupByType(items: Commitment[]) {
@@ -96,6 +99,7 @@ export const CommitmentsList = ({
   onDelete,
   isHistorical = false,
 }: CommitmentsListProps) => {
+  const [filter, setFilter] = useState<CommitmentFilter>('all');
   // Exclude imported commitments from active totals
   const activeCommitments = commitments.filter(c => !c.isImported);
   const unpaidCommitments = activeCommitments.filter(c => !c.isPaid);
@@ -106,8 +110,17 @@ export const CommitmentsList = ({
   // Overdue = unpaid items viewed in a historical (past) month
   const overdueCount = isHistorical ? unpaidCommitments.length : 0;
 
-  const unpaidGroups = groupByType(unpaidCommitments);
-  const paidGroups = groupByType(paidCommitments);
+  const visibleActiveCommitments = activeCommitments.filter(commitment => {
+    if (filter === 'paid') return commitment.isPaid;
+    if (filter === 'overdue') return isHistorical && !commitment.isPaid;
+    if (filter === 'upcoming') return !isHistorical && !commitment.isPaid;
+    return true;
+  });
+  const visibleUnpaidCommitments = visibleActiveCommitments.filter(c => !c.isPaid);
+  const visiblePaidCommitments = visibleActiveCommitments.filter(c => c.isPaid);
+
+  const unpaidGroups = groupByType(visibleUnpaidCommitments);
+  const paidGroups = groupByType(visiblePaidCommitments);
 
   return (
     <Card className="bg-white shadow-lg border-0 animate-fade-in">
@@ -153,6 +166,23 @@ export const CommitmentsList = ({
             </span>
           </div>
         )}
+        <div className="mt-4 grid grid-cols-4 gap-1 rounded-lg bg-slate-100 p-1" role="group" aria-label="Commitment status filter">
+          {(['all', 'upcoming', 'overdue', 'paid'] as CommitmentFilter[]).map(option => {
+            const unavailable = (option === 'overdue' && !isHistorical) || (option === 'upcoming' && isHistorical);
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setFilter(option)}
+                disabled={unavailable}
+                className={`min-h-8 rounded-md px-1 text-xs font-medium capitalize transition-colors ${filter === option ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'} disabled:cursor-not-allowed disabled:opacity-40`}
+                aria-pressed={filter === option}
+              >
+                {option}
+              </button>
+            );
+          })}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {commitments.length === 0 ? (
@@ -173,10 +203,15 @@ export const CommitmentsList = ({
               </>
             )}
           </div>
+        ) : visibleActiveCommitments.length === 0 ? (
+          <div className="py-10 text-center">
+            <div className="text-base font-medium text-slate-700">No {filter} commitments</div>
+            <div className="mt-1 text-sm text-muted-foreground">Choose another status to review your commitments.</div>
+          </div>
         ) : (
           <>
             {/* Unpaid Commitments — grouped by type */}
-            {unpaidCommitments.length > 0 && (
+            {visibleUnpaidCommitments.length > 0 && (
               <div className="space-y-4" data-testid="section-pending">
                 <h3
                   className={`font-medium text-sm uppercase tracking-wide flex items-center gap-1.5 ${
@@ -184,7 +219,7 @@ export const CommitmentsList = ({
                   }`}
                 >
                   {overdueCount > 0 && <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />}
-                  {overdueCount > 0 ? `Overdue (${unpaidCommitments.length})` : `Pending (${unpaidCommitments.length})`}
+                  {overdueCount > 0 ? `Overdue (${visibleUnpaidCommitments.length})` : `Upcoming (${visibleUnpaidCommitments.length})`}
                 </h3>
                 <TypeGroup
                   label="Commitments"
@@ -220,13 +255,13 @@ export const CommitmentsList = ({
             )}
 
             {/* Divider */}
-            {unpaidCommitments.length > 0 && paidCommitments.length > 0 && <div className="border-t my-6"></div>}
+            {visibleUnpaidCommitments.length > 0 && visiblePaidCommitments.length > 0 && <div className="border-t my-6"></div>}
 
             {/* Paid Commitments — grouped by type */}
-            {paidCommitments.length > 0 && (
+            {visiblePaidCommitments.length > 0 && (
               <div className="space-y-4" data-testid="section-completed">
                 <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-                  Completed ({paidCommitments.length})
+                  Paid ({visiblePaidCommitments.length})
                 </h3>
                 <TypeGroup
                   label="Commitment"
@@ -262,7 +297,7 @@ export const CommitmentsList = ({
             )}
 
             {/* Imported Records (not counted in totals) */}
-            {importedCommitments.length > 0 && (
+            {filter === 'all' && importedCommitments.length > 0 && (
               <>
                 <div className="border-t my-6"></div>
                 <div className="space-y-3">
