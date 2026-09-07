@@ -64,7 +64,11 @@ export const RefactoredDashboard = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [commitmentToDelete, setCommitmentToDelete] = useState<CommitmentWithStatus | null>(null);
   const [showIncomeWarning, setShowIncomeWarning] = useState(false);
-  const [commitmentForWarning, setCommitmentForWarning] = useState<{ id: string; title: string; amount: number } | null>(null);
+  const [commitmentForWarning, setCommitmentForWarning] = useState<{
+    id: string;
+    title: string;
+    amount: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Filter state
@@ -151,6 +155,20 @@ export const RefactoredDashboard = () => {
   useEffect(() => {
     loadDashboardData();
   }, [loadDashboardData]);
+
+  useEffect(() => {
+    const handleQuickAdd = (event: Event) => {
+      const action = (event as CustomEvent<'commitment' | 'expense' | 'income'>).detail;
+      if (action === 'income') {
+        setShowIncomeModal(true);
+      } else {
+        setShowCommitmentForm(true);
+      }
+    };
+
+    window.addEventListener('finsync:quick-add', handleQuickAdd);
+    return () => window.removeEventListener('finsync:quick-add', handleQuickAdd);
+  }, []);
 
   // Budget management
   const handleUpdateBudget = async (limit: number | null) => {
@@ -576,15 +594,17 @@ export const RefactoredDashboard = () => {
         </Card>
 
         {/* Commitments List */}
-        <CommitmentsList
-          commitments={commitments}
-          currency="MYR"
-          onMarkPaid={handleMarkPaid}
-          onMarkUnpaid={handleMarkUnpaid}
-          onAddNew={() => setShowCommitmentForm(true)}
-          onDelete={handleDeleteCommitment}
-          isHistorical={isHistoricalMonth}
-        />
+        <div id="commitments">
+          <CommitmentsList
+            commitments={commitments}
+            currency="MYR"
+            onMarkPaid={handleMarkPaid}
+            onMarkUnpaid={handleMarkUnpaid}
+            onAddNew={() => setShowCommitmentForm(true)}
+            onDelete={handleDeleteCommitment}
+            isHistorical={isHistoricalMonth}
+          />
+        </div>
 
         {/* Floating Action Button (Mobile Only) */}
         <FloatingActionButton onClick={() => setShowCommitmentForm(true)} />

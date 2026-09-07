@@ -7,7 +7,7 @@
 @layer base {
   :root {
     /* Core Background & Text */
-    --background: 220 13% 98%;
+    --background: 210 70% 97%;
     --foreground: 215 25% 17%;
 
     /* Card Components */
@@ -19,7 +19,7 @@
     --popover-foreground: 215 25% 17%;
 
     /* Primary - Deep Financial Blue */
-    --primary: 213 94% 68%;
+    --primary: 215 72% 31%;
     --primary-foreground: 0 0% 100%;
     --primary-glow: 213 100% 85%;
 
@@ -32,12 +32,12 @@
     --muted-foreground: 215 16% 47%;
 
     /* Accent - Success Green */
-    --accent: 142 76% 36%;
+    --accent: 160 84% 35%;
     --accent-foreground: 0 0% 100%;
     --accent-glow: 142 69% 58%;
 
     /* Destructive - Warning Red */
-    --destructive: 0 84% 60%;
+    --destructive: 350 84% 58%;
     --destructive-foreground: 0 0% 100%;
 
     /* Borders & Inputs */
@@ -46,18 +46,18 @@
     --ring: 213 94% 68%;
 
     /* Financial App Specific Colors */
-    --income: 142 76% 36%;
+    --income: 160 84% 35%;
     --income-foreground: 0 0% 100%;
     --expense: 25 95% 53%;
     --expense-foreground: 0 0% 100%;
-    --balance: 213 94% 68%;
+    --balance: 215 72% 31%;
     --balance-foreground: 0 0% 100%;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(213 94% 68%), hsl(213 100% 85%));
-    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 69% 58%));
+    --gradient-primary: linear-gradient(135deg, hsl(215 72% 31%), hsl(209 72% 46%));
+    --gradient-success: linear-gradient(135deg, hsl(160 84% 35%), hsl(166 72% 47%));
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(220 13% 98%));
-    --gradient-hero: linear-gradient(135deg, hsl(213 94% 68%), hsl(175 70% 41%));
+    --gradient-hero: linear-gradient(135deg, hsl(215 72% 31%), hsl(207 65% 42%));
 
     /* Shadows */
     --shadow-card: 0 4px 6px -1px hsl(215 25% 17% / 0.1), 0 2px 4px -1px hsl(215 25% 17% / 0.06);
