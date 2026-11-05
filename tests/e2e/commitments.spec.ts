@@ -74,7 +74,7 @@ async function toggleRecurringSwitch(page: Page) {
 async function handleIncomeWarningIfPresent(page: Page): Promise<boolean> {
   // Check if income warning modal appears (happens when income is 0)
   const continueButton = page.locator('button:has-text("Continue Anyway")');
-  
+
   // If the warning modal appears, click "Continue Anyway"
   if (await continueButton.isVisible({ timeout: 2000 }).catch(() => false)) {
     await continueButton.click();
@@ -558,5 +558,115 @@ test.describe('Undo function', () => {
     // Scope the category check to the specific commitment card
     const restoredCard = page.locator(`div.rounded-lg.border:has(span:has-text("${title}"))`);
     await expect(restoredCard.locator(`text=${category}`)).toBeVisible();
+  });
+});
+
+test.describe('Edit commitment', () => {
+  test.beforeEach(async ({ page }) => {
+    await login(page);
+  });
+
+  const card = (page: Page, title: string) =>
+    page.locator(`div.rounded-lg.border:has(span:has-text("${title}"))`).first();
+
+  async function createCommitment(page: Page, title: string, amount: string, recurring: boolean) {
+    await openCommitmentForm(page);
+    await fillCommitmentForm(page, { title, amount, category: 'Housing' });
+    if (recurring) await toggleRecurringSwitch(page);
+    await submitCommitmentForm(page);
+    await expect(page.locator(`span:has-text("${title}").font-semibold`)).toBeVisible({ timeout: 5000 });
+  }
+
+  async function openEdit(page: Page, title: string) {
+    await page.getByRole('button', { name: `Edit ${title}` }).click();
+    await expect(page.locator('input#title')).toHaveValue(title, { timeout: 5000 });
+  }
+
+  async function goToNextMonth(page: Page) {
+    await page.locator('button:has-text("Next"), button[aria-label*="Next"], button:has-text("→")').first().click();
+    await page.waitForLoadState('networkidle');
+  }
+
+  test('one-time commitment: edit saves directly without a scope choice', async ({ page }) => {
+    const title = `Edit OneTime ${Date.now()}`;
+    await createCommitment(page, title, '100', false);
+
+    await openEdit(page, title);
+    await expect(page.locator('button:has-text("This & future months")')).toHaveCount(0);
+    const newTitle = `${title} edited`;
+    await page.fill('input#title', newTitle);
+    await page.fill('input#amount', '150');
+    await page.click('button:has-text("Save Changes")');
+
+    await expect(card(page, newTitle).locator('text=150')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('recurring: "This month only" leaves next month unchanged', async ({ page }) => {
+    const title = `Edit Single ${Date.now()}`;
+    await createCommitment(page, title, '500', true);
+
+    await openEdit(page, title);
+    await page.fill('input#amount', '650');
+    await page.click('button:has-text("This month only")');
+    await expect(card(page, title).locator('text=650')).toBeVisible({ timeout: 5000 });
+
+    await goToNextMonth(page);
+    await expect(card(page, title).locator('text=500')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('recurring: "This & future months" updates next month', async ({ page }) => {
+    const title = `Edit Series ${Date.now()}`;
+    await createCommitment(page, title, '500', true);
+
+    await openEdit(page, title);
+    await page.fill('input#amount', '700');
+    await page.click('button:has-text("This & future months")');
+    await expect(card(page, title).locator('text=700')).toBeVisible({ timeout: 5000 });
+
+    await goToNextMonth(page);
+    await expect(card(page, title).locator('text=700')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('recurring: "This & future months" skips a future month that is already paid', async ({ page }) => {
+    const title = `Edit PaidSkip ${Date.now()}`;
+    await createCommitment(page, title, '500', true);
+
+    // Pay next month, then come back and edit the series from this month
+    await goToNextMonth(page);
+    await card(page, title).locator('button:has-text("Mark Paid")').click();
+    await handleIncomeWarningIfPresent(page);
+    await expect(card(page, title).locator('button:has-text("Mark Unpaid")')).toBeVisible({ timeout: 5000 });
+    await page.locator('button:has-text("Prev"), button[aria-label*="Prev"], button:has-text("←")').first().click();
+    await page.waitForLoadState('networkidle');
+
+    await openEdit(page, title);
+    await page.fill('input#amount', '800');
+    await page.click('button:has-text("This & future months")');
+    await expect(card(page, title).locator('text=800')).toBeVisible({ timeout: 5000 });
+
+    await goToNextMonth(page);
+    await expect(card(page, title).locator('text=500')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('update API rejects invalid input with 400', async ({ request }) => {
+    const id = '00000000-0000-0000-0000-000000000000';
+    const valid = { title: 'X', amount: '10', category: 'Food', type: 'commitment' };
+
+    const badScope = await request.put(`${BASE_URL}/api/commitments/${id}?scope=everything`, { data: valid });
+    expect(badScope.status()).toBe(400);
+
+    for (const bad of [
+      { ...valid, amount: '-5' },
+      { ...valid, amount: 'abc' },
+      { ...valid, title: '  ' },
+      { ...valid, type: 'foo' },
+    ]) {
+      const res = await request.put(`${BASE_URL}/api/commitments/${id}`, { data: bad });
+      expect(res.status()).toBe(400);
+    }
+
+    // Valid body on a missing id -> 404, not a generic 400
+    const missing = await request.put(`${BASE_URL}/api/commitments/${id}`, { data: valid });
+    expect(missing.status()).toBe(404);
   });
 });

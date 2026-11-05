@@ -120,6 +120,10 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible, initialValues, i
       scope
     );
 
+    // Edit mode keeps its values so a failed save doesn't wipe the user's input;
+    // the prefill effect overwrites them next time the form opens.
+    if (isEdit) return;
+
     // Reset form
     setFormData({
       title: '',
@@ -288,7 +292,9 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible, initialValues, i
             {/* Action Buttons */}
             {isSeries ? (
               <div className="space-y-2 pt-4">
-                <p className="text-sm text-muted-foreground">This is a recurring commitment. Apply changes to:</p>
+                <p className="text-sm text-muted-foreground">
+                  This is a recurring commitment. Apply changes to: (past and already-paid months stay unchanged)
+                </p>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Button
                     type="button"
@@ -304,7 +310,7 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible, initialValues, i
                     onClick={e => handleSubmit(e, 'all')}
                     className="flex-1 touch-target"
                   >
-                    Entire series
+                    This & future months
                   </Button>
                 </div>
                 <Button type="button" variant="ghost" onClick={onCancel} className="w-full touch-target">

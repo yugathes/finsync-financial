@@ -198,29 +198,34 @@ class CommitmentService {
       throw error;
     }
   }
+  /**
+   * scope 'single': update only this row.
+   * scope 'all': update this row plus later months in its series that have no payment yet.
+   * Past and paid months keep their values so they still match their payment records.
+   */
   async updateCommitment(
     id: string,
-    updates: Partial<Commitment>,
+    data: { title: string; amount: string; category: string; type: string },
     scope: 'single' | 'all' = 'single'
-  ): Promise<Commitment> {
+  ): Promise<{ commitment: Commitment; updatedCount: number }> {
     try {
-      // Only content fields are editable; ownership, series and dates stay fixed.
-      const { title, amount, category, type } = updates;
-      const data = { title, amount, category, type, updatedAt: new Date() };
+      // Only content fields are editable; ownership, series and start dates stay fixed.
+      const commitment = await prisma.commitment.update({ where: { id }, data: { ...data, updatedAt: new Date() } });
+      let updatedCount = 1;
 
-      if (scope === 'all') {
-        const target = await prisma.commitment.findUnique({ where: { id }, select: { seriesId: true } });
-        if (target?.seriesId) {
-          await prisma.commitment.updateMany({ where: { seriesId: target.seriesId }, data });
-          return prisma.commitment.findUniqueOrThrow({ where: { id } });
-        }
+      if (scope === 'all' && commitment.seriesId && commitment.startDate) {
+        const { count } = await prisma.commitment.updateMany({
+          where: {
+            seriesId: commitment.seriesId,
+            startDate: { gt: commitment.startDate },
+            payments: { none: {} },
+          },
+          data: { ...data, updatedAt: new Date() },
+        });
+        updatedCount += count;
       }
 
-      const commitment = await prisma.commitment.update({
-        where: { id: id },
-        data,
-      });
-      return commitment;
+      return { commitment, updatedCount };
     } catch (error) {
       console.error('Error updating commitment:', error);
       throw error;

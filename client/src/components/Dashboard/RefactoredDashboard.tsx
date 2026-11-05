@@ -61,7 +61,9 @@ export const RefactoredDashboard = () => {
   const [showCommitmentForm, setShowCommitmentForm] = useState(false);
   // COMMENTED OUT: Import functionality disabled
   // const [showImportWizard, setShowImportWizard] = useState(false);
-  const [commitmentToEdit, setCommitmentToEdit] = useState<any | null>(null);
+  const [commitmentToEdit, setCommitmentToEdit] = useState<
+    (CommitmentWithStatus & { seriesId?: string | null }) | null
+  >(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [commitmentToDelete, setCommitmentToDelete] = useState<CommitmentWithStatus | null>(null);
   const [showIncomeWarning, setShowIncomeWarning] = useState(false);
@@ -325,7 +327,7 @@ export const RefactoredDashboard = () => {
   ) => {
     if (!commitmentToEdit) return;
     try {
-      await apiRequest(`/api/commitments/${commitmentToEdit.id}?scope=${scope}`, {
+      const result = await apiRequest(`/api/commitments/${commitmentToEdit.id}?scope=${scope}`, {
         method: 'PUT',
         body: JSON.stringify({
           title: updated.title,
@@ -338,7 +340,10 @@ export const RefactoredDashboard = () => {
       await loadDashboardData();
       toast({
         title: 'Commitment updated!',
-        description: scope === 'all' ? `${updated.title} updated for the entire series` : `${updated.title} updated`,
+        description:
+          scope === 'all'
+            ? `${updated.title} updated for ${result.updatedCount} month${result.updatedCount === 1 ? '' : 's'} (paid and past months unchanged)`
+            : `${updated.title} updated`,
       });
     } catch (error: any) {
       toast({

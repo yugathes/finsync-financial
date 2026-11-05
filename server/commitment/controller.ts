@@ -57,11 +57,37 @@ export async function createCommitment(req: Request, res: Response) {
 export async function updateCommitment(req: Request, res: Response) {
   try {
     const id = req.params.id;
-    const updates = req.body;
-    const scope = req.query.scope === 'all' ? 'all' : 'single';
-    const commitment = await CommitmentService.updateCommitment(id, updates, scope);
-    res.json(commitment);
-  } catch (error) {
+    const { title, amount, category, type } = req.body ?? {};
+    const scope = req.query.scope ?? 'single';
+
+    if (scope !== 'single' && scope !== 'all') {
+      return res.status(400).json({ error: "scope must be 'single' or 'all'" });
+    }
+    if (typeof title !== 'string' || !title.trim()) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+    if (typeof category !== 'string' || !category.trim()) {
+      return res.status(400).json({ error: 'Category is required' });
+    }
+    if (type !== 'commitment' && type !== 'expenses') {
+      return res.status(400).json({ error: "type must be 'commitment' or 'expenses'" });
+    }
+    const amountNum = Number(amount);
+    if (amount === '' || amount === null || !Number.isFinite(amountNum) || amountNum <= 0) {
+      return res.status(400).json({ error: 'Amount must be a positive number' });
+    }
+
+    const { commitment, updatedCount } = await CommitmentService.updateCommitment(
+      id,
+      { title: title.trim(), amount: String(amountNum), category: category.trim(), type },
+      scope
+    );
+    res.json({ ...commitment, updatedCount });
+  } catch (error: any) {
+    // P2025: record to update not found
+    if (error?.code === 'P2025') {
+      return res.status(404).json({ error: 'Commitment not found' });
+    }
     res.status(400).json({ error: 'Failed to update commitment' });
   }
 }
