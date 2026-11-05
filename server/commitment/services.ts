@@ -198,16 +198,49 @@ class CommitmentService {
       throw error;
     }
   }
-  async updateCommitment(id: string, updates: Partial<Commitment>): Promise<Commitment> {
+  /**
+   * scope 'single': update only this row.
+   * scope 'all': update this row plus later months in its series that have no payment yet.
+   * Earlier months and other paid months keep their values so they still match their payment records.
+   * Both writes run in one transaction so a failure leaves the series unchanged.
+   */
+  async updateCommitment(
+    id: string,
+    data: { title: string; amount: string; category: string; type: string },
+    scope: 'single' | 'all' = 'single'
+  ): Promise<{ commitment: Commitment; updatedCount: number }> {
     try {
-      const commitment = await prisma.commitment.update({
-        where: { id: id },
-        data: {
-          ...updates,
-          updatedAt: new Date(),
-        },
+      // Only content fields are editable; ownership, series and start dates stay fixed.
+      const patch = { ...data, updatedAt: new Date() };
+      return await prisma.$transaction(async tx => {
+        const existing = await tx.commitment.findUnique({
+          where: { id },
+          select: { recurring: true, seriesId: true, _count: { select: { payments: true } } },
+        });
+        // A paid month's payment stores the old amount, so editing it would desync totals.
+        // Legacy recurring rows (no seriesId) carry payments for many months and stay editable.
+        const isLegacyRecurring = existing?.recurring && !existing.seriesId;
+        if (existing && !isLegacyRecurring && existing._count.payments > 0) {
+          throw Object.assign(new Error('Commitment is paid'), { code: 'COMMITMENT_PAID' });
+        }
+
+        const commitment = await tx.commitment.update({ where: { id }, data: patch });
+        let updatedCount = 1;
+
+        if (scope === 'all' && commitment.seriesId && commitment.startDate) {
+          const { count } = await tx.commitment.updateMany({
+            where: {
+              seriesId: commitment.seriesId,
+              startDate: { gt: commitment.startDate },
+              payments: { none: {} },
+            },
+            data: patch,
+          });
+          updatedCount += count;
+        }
+
+        return { commitment, updatedCount };
       });
-      return commitment;
     } catch (error) {
       console.error('Error updating commitment:', error);
       throw error;

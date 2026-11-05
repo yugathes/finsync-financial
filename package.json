@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",
+  "engines": {
+    "node": "26.x"
+  },
   "scripts": {
     "dev": "NODE_ENV=development nodemon --watch server --ext ts,js --exec \"tsx server/index.ts\"",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",

@@ -57,11 +57,43 @@ export async function createCommitment(req: Request, res: Response) {
 export async function updateCommitment(req: Request, res: Response) {
   try {
     const id = req.params.id;
-    const updates = req.body;
-    const commitment = await CommitmentService.updateCommitment(id, updates);
-    res.json(commitment);
-  } catch (error) {
-    res.status(400).json({ error: 'Failed to update commitment' });
+    const { title, amount, category, type } = req.body ?? {};
+    const scope = req.query.scope ?? 'single';
+
+    if (scope !== 'single' && scope !== 'all') {
+      return res.status(400).json({ error: "scope must be 'single' or 'all'" });
+    }
+    if (typeof title !== 'string' || !title.trim()) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+    if (typeof category !== 'string' || !category.trim()) {
+      return res.status(400).json({ error: 'Category is required' });
+    }
+    if (type !== 'commitment' && type !== 'expenses') {
+      return res.status(400).json({ error: "type must be 'commitment' or 'expenses'" });
+    }
+    const amountNum = typeof amount === 'number' || typeof amount === 'string' ? Number(amount) : NaN;
+    // Column is Decimal(10,2), so amounts round to cents; require at least one cent
+    if (!Number.isFinite(amountNum) || amountNum < 0.01) {
+      return res.status(400).json({ error: 'Amount must be at least 0.01' });
+    }
+
+    const { commitment, updatedCount } = await CommitmentService.updateCommitment(
+      id,
+      { title: title.trim(), amount: String(amountNum), category: category.trim(), type },
+      scope
+    );
+    res.json({ ...commitment, updatedCount });
+  } catch (error: any) {
+    // P2025: record to update not found
+    if (error?.code === 'P2025') {
+      return res.status(404).json({ error: 'Commitment not found' });
+    }
+    if (error?.code === 'COMMITMENT_PAID') {
+      return res.status(409).json({ error: 'Mark this month unpaid before editing it' });
+    }
+    console.error('Failed to update commitment', req.params.id, req.query.scope, error);
+    res.status(500).json({ error: 'Failed to update commitment' });
   }
 }
 
