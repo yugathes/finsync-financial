@@ -89,6 +89,9 @@ export async function updateCommitment(req: Request, res: Response) {
     if (error?.code === 'P2025') {
       return res.status(404).json({ error: 'Commitment not found' });
     }
+    if (error?.code === 'COMMITMENT_PAID') {
+      return res.status(409).json({ error: 'Mark this month unpaid before editing it' });
+    }
     console.error('Failed to update commitment', req.params.id, req.query.scope, error);
     res.status(500).json({ error: 'Failed to update commitment' });
   }

@@ -650,6 +650,8 @@ test.describe('Edit commitment', () => {
     await card(page, title).locator('button:has-text("Mark Paid")').click();
     await handleIncomeWarningIfPresent(page);
     await expect(card(page, title).locator('button:has-text("Mark Unpaid")')).toBeVisible({ timeout: 5000 });
+    // A paid month can't be edited (its payment record holds the old amount)
+    await expect(page.getByRole('button', { name: `Edit ${title}` })).toBeDisabled();
     await switchMonth(page, 'prev');
 
     await openEdit(page, title);

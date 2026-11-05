@@ -645,6 +645,7 @@ export const RefactoredDashboard = () => {
           isVisible={!!commitmentToEdit}
           initialValues={commitmentToEdit ?? undefined}
           isSeries={!!commitmentToEdit?.seriesId}
+          isLegacyRecurring={!!commitmentToEdit?.recurring && !commitmentToEdit.seriesId}
           onSubmit={handleSaveEdit}
           onCancel={() => setCommitmentToEdit(null)}
         />

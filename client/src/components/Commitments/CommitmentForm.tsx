@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,13 +21,15 @@ interface CommitmentFormProps {
       groupId?: string;
     },
     scope?: 'single' | 'all'
-  ) => void;
+  ) => void | Promise<void>;
   onCancel: () => void;
   isVisible: boolean;
   /** Edit mode: prefill with these values and hide recurring/shared toggles */
   initialValues?: { title: string; amount: number | string; type: 'commitment' | 'expenses'; category: string };
   /** Edit mode for a recurring series row: ask whether to save this month only or the whole series */
   isSeries?: boolean;
+  /** Edit mode for an older recurring item stored as one row shown in every month */
+  isLegacyRecurring?: boolean;
 }
 
 interface Group {
@@ -48,8 +50,17 @@ const categories = [
   'Other',
 ];
 
-export const CommitmentForm = ({ onSubmit, onCancel, isVisible, initialValues, isSeries }: CommitmentFormProps) => {
+export const CommitmentForm = ({
+  onSubmit,
+  onCancel,
+  isVisible,
+  initialValues,
+  isSeries,
+  isLegacyRecurring,
+}: CommitmentFormProps) => {
   const isEdit = !!initialValues;
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const { user } = useSession();
   const [groups, setGroups] = useState<Group[]>([]);
   const [formData, setFormData] = useState<{
@@ -97,9 +108,10 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible, initialValues, i
     loadGroups();
   }, [user?.id, isVisible]);
 
-  const handleSubmit = (e: React.FormEvent, scope?: 'single' | 'all') => {
+  const handleSubmit = async (e: React.FormEvent, scope?: 'single' | 'all') => {
     e.preventDefault();
-    if (!formData.title || !formData.amount || !formData.category) return;
+    // Ref blocks a second click before the disabled state re-renders
+    if (savingRef.current || !formData.title || !formData.amount || !formData.category) return;
 
     // Validate group selection if shared is enabled
     if (formData.shared && !formData.groupId) {
@@ -107,18 +119,25 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible, initialValues, i
       return;
     }
 
-    onSubmit(
-      {
-        title: formData.title,
-        amount: parseFloat(formData.amount),
-        type: formData.type,
-        category: formData.category,
-        recurring: formData.recurring,
-        shared: formData.shared,
-        groupId: formData.shared ? formData.groupId : undefined,
-      },
-      scope
-    );
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      await onSubmit(
+        {
+          title: formData.title,
+          amount: parseFloat(formData.amount),
+          type: formData.type,
+          category: formData.category,
+          recurring: formData.recurring,
+          shared: formData.shared,
+          groupId: formData.shared ? formData.groupId : undefined,
+        },
+        scope
+      );
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
 
     // Edit mode keeps its values so a failed save doesn't wipe the user's input;
     // the prefill effect overwrites them next time the form opens.
@@ -293,13 +312,15 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible, initialValues, i
             {isSeries ? (
               <div className="space-y-2 pt-4">
                 <p className="text-sm text-muted-foreground">
-                  This is a recurring commitment. Apply changes to: (earlier months and other paid months stay unchanged)
+                  This is a recurring commitment. Apply changes to: (earlier months and other paid months stay
+                  unchanged)
                 </p>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={e => handleSubmit(e, 'single')}
+                    disabled={saving}
                     className="flex-1 touch-target"
                   >
                     This month only
@@ -308,6 +329,7 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible, initialValues, i
                     type="button"
                     variant="primary"
                     onClick={e => handleSubmit(e, 'all')}
+                    disabled={saving}
                     className="flex-1 touch-target"
                   >
                     This & future months
@@ -318,13 +340,20 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible, initialValues, i
                 </Button>
               </div>
             ) : (
-              <div className="flex gap-3 pt-4">
-                <Button type="button" variant="outline" onClick={onCancel} className="flex-1 touch-target">
-                  Cancel
-                </Button>
-                <Button type="submit" variant="primary" className="flex-1 touch-target">
-                  {isEdit ? 'Save Changes' : 'Add Commitment'}
-                </Button>
+              <div className="space-y-2 pt-4">
+                {isLegacyRecurring && (
+                  <p className="text-sm text-muted-foreground">
+                    Older recurring item: changes apply to all months, past and future.
+                  </p>
+                )}
+                <div className="flex gap-3">
+                  <Button type="button" variant="outline" onClick={onCancel} className="flex-1 touch-target">
+                    Cancel
+                  </Button>
+                  <Button type="submit" variant="primary" disabled={saving} className="flex-1 touch-target">
+                    {isEdit ? 'Save Changes' : 'Add Commitment'}
+                  </Button>
+                </div>
               </div>
             )}
           </form>

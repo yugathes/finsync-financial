@@ -213,6 +213,17 @@ class CommitmentService {
       // Only content fields are editable; ownership, series and start dates stay fixed.
       const patch = { ...data, updatedAt: new Date() };
       return await prisma.$transaction(async tx => {
+        const existing = await tx.commitment.findUnique({
+          where: { id },
+          select: { recurring: true, seriesId: true, _count: { select: { payments: true } } },
+        });
+        // A paid month's payment stores the old amount, so editing it would desync totals.
+        // Legacy recurring rows (no seriesId) carry payments for many months and stay editable.
+        const isLegacyRecurring = existing?.recurring && !existing.seriesId;
+        if (existing && !isLegacyRecurring && existing._count.payments > 0) {
+          throw Object.assign(new Error('Commitment is paid'), { code: 'COMMITMENT_PAID' });
+        }
+
         const commitment = await tx.commitment.update({ where: { id }, data: patch });
         let updatedCount = 1;
 

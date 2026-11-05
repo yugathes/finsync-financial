@@ -422,8 +422,10 @@ const CommitmentItem = ({
             variant="ghost"
             size="sm"
             onClick={() => onEdit(commitment.id)}
-            disabled={isHistorical}
-            title={isHistorical ? 'Cannot modify historical records' : 'Edit'}
+            disabled={isHistorical || commitment.isPaid}
+            title={
+              isHistorical ? 'Cannot modify historical records' : commitment.isPaid ? 'Mark unpaid to edit' : 'Edit'
+            }
             aria-label={`Edit ${commitment.title}`}
             className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 disabled:opacity-50 disabled:pointer-events-none touch-target"
           >
