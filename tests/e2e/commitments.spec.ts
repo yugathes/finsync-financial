@@ -5,7 +5,7 @@ import type { Page } from '@playwright/test';
  * Commitments CRUD E2E Tests
  *
  * These tests verify that all commitment operations (create, edit, delete,
- * mark paid/unpaid, import) work correctly and trigger immediate dashboard
+ * mark paid/unpaid, undo, month navigation) work correctly and trigger immediate dashboard
  * total updates.
  *
  * Prerequisites:
@@ -76,7 +76,12 @@ async function handleIncomeWarningIfPresent(page: Page): Promise<boolean> {
   const continueButton = page.locator('button:has-text("Continue Anyway")');
 
   // If the warning modal appears, click "Continue Anyway"
-  if (await continueButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+  // isVisible() doesn't wait, so use waitFor to catch a modal that appears a moment late
+  const appeared = await continueButton
+    .waitFor({ state: 'visible', timeout: 2000 })
+    .then(() => true)
+    .catch(() => false);
+  if (appeared) {
     await continueButton.click();
     await page.waitForTimeout(500); // Wait for modal to close
     return true;
@@ -582,10 +587,19 @@ test.describe('Edit commitment', () => {
     await expect(page.locator('input#title')).toHaveValue(title, { timeout: 5000 });
   }
 
-  async function goToNextMonth(page: Page) {
-    await page.locator('button:has-text("Next"), button[aria-label*="Next"], button:has-text("→")').first().click();
+  // Wait for the month label to change, so assertions never run against the previous month's cards
+  async function switchMonth(page: Page, direction: 'next' | 'prev') {
+    const label = page.getByTestId('month-dropdown-trigger');
+    const before = await label.innerText();
+    await page.getByTestId(`month-${direction}`).click();
+    await expect(label).not.toHaveText(before, { timeout: 5000 });
     await page.waitForLoadState('networkidle');
   }
+  const goToNextMonth = (page: Page) => switchMonth(page, 'next');
+
+  // Exact match so "500" doesn't match "1,500" or digits in the timestamped title
+  const amount = (page: Page, title: string, value: string) =>
+    card(page, title).getByText(new RegExp(`^MYR ${value}(\\.00)?$`));
 
   test('one-time commitment: edit saves directly without a scope choice', async ({ page }) => {
     const title = `Edit OneTime ${Date.now()}`;
@@ -598,7 +612,7 @@ test.describe('Edit commitment', () => {
     await page.fill('input#amount', '150');
     await page.click('button:has-text("Save Changes")');
 
-    await expect(card(page, newTitle).locator('text=150')).toBeVisible({ timeout: 5000 });
+    await expect(amount(page, newTitle, '150')).toBeVisible({ timeout: 5000 });
   });
 
   test('recurring: "This month only" leaves next month unchanged', async ({ page }) => {
@@ -608,10 +622,10 @@ test.describe('Edit commitment', () => {
     await openEdit(page, title);
     await page.fill('input#amount', '650');
     await page.click('button:has-text("This month only")');
-    await expect(card(page, title).locator('text=650')).toBeVisible({ timeout: 5000 });
+    await expect(amount(page, title, '650')).toBeVisible({ timeout: 5000 });
 
     await goToNextMonth(page);
-    await expect(card(page, title).locator('text=500')).toBeVisible({ timeout: 5000 });
+    await expect(amount(page, title, '500')).toBeVisible({ timeout: 5000 });
   });
 
   test('recurring: "This & future months" updates next month', async ({ page }) => {
@@ -621,10 +635,10 @@ test.describe('Edit commitment', () => {
     await openEdit(page, title);
     await page.fill('input#amount', '700');
     await page.click('button:has-text("This & future months")');
-    await expect(card(page, title).locator('text=700')).toBeVisible({ timeout: 5000 });
+    await expect(amount(page, title, '700')).toBeVisible({ timeout: 5000 });
 
     await goToNextMonth(page);
-    await expect(card(page, title).locator('text=700')).toBeVisible({ timeout: 5000 });
+    await expect(amount(page, title, '700')).toBeVisible({ timeout: 5000 });
   });
 
   test('recurring: "This & future months" skips a future month that is already paid', async ({ page }) => {
@@ -636,16 +650,16 @@ test.describe('Edit commitment', () => {
     await card(page, title).locator('button:has-text("Mark Paid")').click();
     await handleIncomeWarningIfPresent(page);
     await expect(card(page, title).locator('button:has-text("Mark Unpaid")')).toBeVisible({ timeout: 5000 });
-    await page.locator('button:has-text("Prev"), button[aria-label*="Prev"], button:has-text("←")').first().click();
-    await page.waitForLoadState('networkidle');
+    await switchMonth(page, 'prev');
 
     await openEdit(page, title);
     await page.fill('input#amount', '800');
     await page.click('button:has-text("This & future months")');
-    await expect(card(page, title).locator('text=800')).toBeVisible({ timeout: 5000 });
+    await expect(amount(page, title, '800')).toBeVisible({ timeout: 5000 });
 
     await goToNextMonth(page);
-    await expect(card(page, title).locator('text=500')).toBeVisible({ timeout: 5000 });
+    await expect(amount(page, title, '500')).toBeVisible({ timeout: 5000 });
+    await expect(card(page, title).locator('button:has-text("Mark Unpaid")')).toBeVisible();
   });
 
   test('update API rejects invalid input with 400', async ({ request }) => {

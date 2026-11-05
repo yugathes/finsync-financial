@@ -201,7 +201,8 @@ class CommitmentService {
   /**
    * scope 'single': update only this row.
    * scope 'all': update this row plus later months in its series that have no payment yet.
-   * Past and paid months keep their values so they still match their payment records.
+   * Earlier months and other paid months keep their values so they still match their payment records.
+   * Both writes run in one transaction so a failure leaves the series unchanged.
    */
   async updateCommitment(
     id: string,
@@ -210,22 +211,25 @@ class CommitmentService {
   ): Promise<{ commitment: Commitment; updatedCount: number }> {
     try {
       // Only content fields are editable; ownership, series and start dates stay fixed.
-      const commitment = await prisma.commitment.update({ where: { id }, data: { ...data, updatedAt: new Date() } });
-      let updatedCount = 1;
+      const patch = { ...data, updatedAt: new Date() };
+      return await prisma.$transaction(async tx => {
+        const commitment = await tx.commitment.update({ where: { id }, data: patch });
+        let updatedCount = 1;
 
-      if (scope === 'all' && commitment.seriesId && commitment.startDate) {
-        const { count } = await prisma.commitment.updateMany({
-          where: {
-            seriesId: commitment.seriesId,
-            startDate: { gt: commitment.startDate },
-            payments: { none: {} },
-          },
-          data: { ...data, updatedAt: new Date() },
-        });
-        updatedCount += count;
-      }
+        if (scope === 'all' && commitment.seriesId && commitment.startDate) {
+          const { count } = await tx.commitment.updateMany({
+            where: {
+              seriesId: commitment.seriesId,
+              startDate: { gt: commitment.startDate },
+              payments: { none: {} },
+            },
+            data: patch,
+          });
+          updatedCount += count;
+        }
 
-      return { commitment, updatedCount };
+        return { commitment, updatedCount };
+      });
     } catch (error) {
       console.error('Error updating commitment:', error);
       throw error;

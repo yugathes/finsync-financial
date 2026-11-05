@@ -72,9 +72,10 @@ export async function updateCommitment(req: Request, res: Response) {
     if (type !== 'commitment' && type !== 'expenses') {
       return res.status(400).json({ error: "type must be 'commitment' or 'expenses'" });
     }
-    const amountNum = Number(amount);
-    if (amount === '' || amount === null || !Number.isFinite(amountNum) || amountNum <= 0) {
-      return res.status(400).json({ error: 'Amount must be a positive number' });
+    const amountNum = typeof amount === 'number' || typeof amount === 'string' ? Number(amount) : NaN;
+    // Column is Decimal(10,2): anything below 0.01 would be stored as 0.00
+    if (!Number.isFinite(amountNum) || amountNum < 0.01) {
+      return res.status(400).json({ error: 'Amount must be at least 0.01' });
     }
 
     const { commitment, updatedCount } = await CommitmentService.updateCommitment(
@@ -88,7 +89,8 @@ export async function updateCommitment(req: Request, res: Response) {
     if (error?.code === 'P2025') {
       return res.status(404).json({ error: 'Commitment not found' });
     }
-    res.status(400).json({ error: 'Failed to update commitment' });
+    console.error('Failed to update commitment', req.params.id, req.query.scope, error);
+    res.status(500).json({ error: 'Failed to update commitment' });
   }
 }
 

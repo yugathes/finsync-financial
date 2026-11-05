@@ -342,7 +342,7 @@ export const RefactoredDashboard = () => {
         title: 'Commitment updated!',
         description:
           scope === 'all'
-            ? `${updated.title} updated for ${result.updatedCount} month${result.updatedCount === 1 ? '' : 's'} (paid and past months unchanged)`
+            ? `${updated.title} updated for ${result.updatedCount} month${result.updatedCount === 1 ? '' : 's'} (earlier and other paid months unchanged)`
             : `${updated.title} updated`,
       });
     } catch (error: any) {

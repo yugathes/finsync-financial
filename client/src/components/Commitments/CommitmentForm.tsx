@@ -293,7 +293,7 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible, initialValues, i
             {isSeries ? (
               <div className="space-y-2 pt-4">
                 <p className="text-sm text-muted-foreground">
-                  This is a recurring commitment. Apply changes to: (past and already-paid months stay unchanged)
+                  This is a recurring commitment. Apply changes to: (earlier months and other paid months stay unchanged)
                 </p>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Button
