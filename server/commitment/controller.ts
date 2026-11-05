@@ -73,7 +73,7 @@ export async function updateCommitment(req: Request, res: Response) {
       return res.status(400).json({ error: "type must be 'commitment' or 'expenses'" });
     }
     const amountNum = typeof amount === 'number' || typeof amount === 'string' ? Number(amount) : NaN;
-    // Column is Decimal(10,2): anything below 0.01 would be stored as 0.00
+    // Column is Decimal(10,2), so amounts round to cents; require at least one cent
     if (!Number.isFinite(amountNum) || amountNum < 0.01) {
       return res.status(400).json({ error: 'Amount must be at least 0.01' });
     }

@@ -343,7 +343,7 @@ export const CommitmentForm = ({
               <div className="space-y-2 pt-4">
                 {isLegacyRecurring && (
                   <p className="text-sm text-muted-foreground">
-                    Older recurring item: changes apply to all months, past and future.
+                    Older recurring item: changes apply to every month it appears in, including past ones.
                   </p>
                 )}
                 <div className="flex gap-3">

@@ -646,12 +646,18 @@ test.describe('Edit commitment', () => {
     await createCommitment(page, title, '500', true);
 
     // Pay next month, then come back and edit the series from this month
+    const nextMonthRows = page.waitForResponse(r => /\/api\/commitments\/user\/[^/]+\/month\//.test(r.url()));
     await goToNextMonth(page);
+    const nextMonthId = (await (await nextMonthRows).json()).find((c: { title: string }) => c.title === title).id;
     await card(page, title).locator('button:has-text("Mark Paid")').click();
     await handleIncomeWarningIfPresent(page);
     await expect(card(page, title).locator('button:has-text("Mark Unpaid")')).toBeVisible({ timeout: 5000 });
-    // A paid month can't be edited (its payment record holds the old amount)
+    // A paid month can't be edited (its payment record holds the old amount), in the UI or via the API
     await expect(page.getByRole('button', { name: `Edit ${title}` })).toBeDisabled();
+    const paidEdit = await page.request.put(`${BASE_URL}/api/commitments/${nextMonthId}`, {
+      data: { title, amount: '999', category: 'Housing', type: 'commitment' },
+    });
+    expect(paidEdit.status()).toBe(409);
     await switchMonth(page, 'prev');
 
     await openEdit(page, title);
