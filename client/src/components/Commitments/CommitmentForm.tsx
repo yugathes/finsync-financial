@@ -10,17 +10,24 @@ import { X, DollarSign, Tag, Calendar } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 
 interface CommitmentFormProps {
-  onSubmit: (commitment: {
-    title: string;
-    amount: number;
-    type: 'commitment' | 'expenses';
-    category: string;
-    recurring?: boolean;
-    shared?: boolean;
-    groupId?: string;
-  }) => void;
+  onSubmit: (
+    commitment: {
+      title: string;
+      amount: number;
+      type: 'commitment' | 'expenses';
+      category: string;
+      recurring?: boolean;
+      shared?: boolean;
+      groupId?: string;
+    },
+    scope?: 'single' | 'all'
+  ) => void;
   onCancel: () => void;
   isVisible: boolean;
+  /** Edit mode: prefill with these values and hide recurring/shared toggles */
+  initialValues?: { title: string; amount: number | string; type: 'commitment' | 'expenses'; category: string };
+  /** Edit mode for a recurring series row: ask whether to save this month only or the whole series */
+  isSeries?: boolean;
 }
 
 interface Group {
@@ -41,7 +48,8 @@ const categories = [
   'Other',
 ];
 
-export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentFormProps) => {
+export const CommitmentForm = ({ onSubmit, onCancel, isVisible, initialValues, isSeries }: CommitmentFormProps) => {
+  const isEdit = !!initialValues;
   const { user } = useSession();
   const [groups, setGroups] = useState<Group[]>([]);
   const [formData, setFormData] = useState<{
@@ -62,6 +70,14 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
     groupId: '',
   });
 
+  // Prefill when opened for editing
+  useEffect(() => {
+    if (isVisible && initialValues) {
+      const { title, amount, type, category } = initialValues;
+      setFormData(prev => ({ ...prev, title, type, category, amount: String(amount) }));
+    }
+  }, [isVisible, initialValues]);
+
   // Load user's groups when form becomes visible
   useEffect(() => {
     const loadGroups = async () => {
@@ -81,7 +97,7 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
     loadGroups();
   }, [user?.id, isVisible]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent, scope?: 'single' | 'all') => {
     e.preventDefault();
     if (!formData.title || !formData.amount || !formData.category) return;
 
@@ -91,15 +107,18 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
       return;
     }
 
-    onSubmit({
-      title: formData.title,
-      amount: parseFloat(formData.amount),
-      type: formData.type,
-      category: formData.category,
-      recurring: formData.recurring,
-      shared: formData.shared,
-      groupId: formData.shared ? formData.groupId : undefined,
-    });
+    onSubmit(
+      {
+        title: formData.title,
+        amount: parseFloat(formData.amount),
+        type: formData.type,
+        category: formData.category,
+        recurring: formData.recurring,
+        shared: formData.shared,
+        groupId: formData.shared ? formData.groupId : undefined,
+      },
+      scope
+    );
 
     // Reset form
     setFormData({
@@ -122,7 +141,7 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
           <div className="flex items-center justify-between">
             <CardTitle className="text-xl font-semibold flex items-center gap-2">
               <DollarSign className="h-5 w-5 text-primary" />
-              Add New Commitment
+              {isEdit ? 'Edit Commitment' : 'Add New Commitment'}
             </CardTitle>
             <Button variant="ghost" size="icon" onClick={onCancel} className="touch-target">
               <X className="h-5 w-5" />
@@ -207,72 +226,101 @@ export const CommitmentForm = ({ onSubmit, onCancel, isVisible }: CommitmentForm
               </Select>
             </div>
 
-            {/* Recurring and Shared Options */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="space-y-0.5 min-w-0">
-                  <Label htmlFor="recurring">Recurring Monthly</Label>
-                  <p className="text-xs text-muted-foreground">Automatically appears every month</p>
+            {/* Recurring and Shared Options (not editable after creation) */}
+            {!isEdit && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-0.5 min-w-0">
+                    <Label htmlFor="recurring">Recurring Monthly</Label>
+                    <p className="text-xs text-muted-foreground">Automatically appears every month</p>
+                  </div>
+                  <Switch
+                    id="recurring"
+                    checked={formData.recurring}
+                    onCheckedChange={checked => setFormData({ ...formData, recurring: checked })}
+                  />
                 </div>
-                <Switch
-                  id="recurring"
-                  checked={formData.recurring}
-                  onCheckedChange={checked => setFormData({ ...formData, recurring: checked })}
-                />
-              </div>
 
-              <div className="flex items-center justify-between gap-4">
-                <div className="space-y-0.5 min-w-0">
-                  <Label htmlFor="shared">Shared Commitment</Label>
-                  <p className="text-xs text-muted-foreground">Split with family/roommates</p>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-0.5 min-w-0">
+                    <Label htmlFor="shared">Shared Commitment</Label>
+                    <p className="text-xs text-muted-foreground">Split with family/roommates</p>
+                  </div>
+                  <Switch
+                    id="shared"
+                    checked={formData.shared}
+                    onCheckedChange={checked =>
+                      setFormData({ ...formData, shared: checked, groupId: checked ? formData.groupId : '' })
+                    }
+                  />
                 </div>
-                <Switch
-                  id="shared"
-                  checked={formData.shared}
-                  onCheckedChange={checked =>
-                    setFormData({ ...formData, shared: checked, groupId: checked ? formData.groupId : '' })
-                  }
-                />
-              </div>
 
-              {/* Group Selector - Only show when shared is enabled */}
-              {formData.shared && (
-                <div className="space-y-2 pl-4 border-l-2 border-primary/20">
-                  <Label htmlFor="group">Select Group</Label>
-                  {groups.length > 0 ? (
-                    <Select
-                      value={formData.groupId}
-                      onValueChange={value => setFormData(prev => ({ ...prev, groupId: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose a group to share with" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {groups.map(group => (
-                          <SelectItem key={group.id} value={group.id}>
-                            {group.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md">
-                      No groups available. Create a group first in the Groups page.
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
+                {/* Group Selector - Only show when shared is enabled */}
+                {formData.shared && (
+                  <div className="space-y-2 pl-4 border-l-2 border-primary/20">
+                    <Label htmlFor="group">Select Group</Label>
+                    {groups.length > 0 ? (
+                      <Select
+                        value={formData.groupId}
+                        onValueChange={value => setFormData(prev => ({ ...prev, groupId: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose a group to share with" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {groups.map(group => (
+                            <SelectItem key={group.id} value={group.id}>
+                              {group.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md">
+                        No groups available. Create a group first in the Groups page.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Action Buttons */}
-            <div className="flex gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={onCancel} className="flex-1 touch-target">
-                Cancel
-              </Button>
-              <Button type="submit" variant="primary" className="flex-1 touch-target">
-                Add Commitment
-              </Button>
-            </div>
+            {isSeries ? (
+              <div className="space-y-2 pt-4">
+                <p className="text-sm text-muted-foreground">This is a recurring commitment. Apply changes to:</p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={e => handleSubmit(e, 'single')}
+                    className="flex-1 touch-target"
+                  >
+                    This month only
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    onClick={e => handleSubmit(e, 'all')}
+                    className="flex-1 touch-target"
+                  >
+                    Entire series
+                  </Button>
+                </div>
+                <Button type="button" variant="ghost" onClick={onCancel} className="w-full touch-target">
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-3 pt-4">
+                <Button type="button" variant="outline" onClick={onCancel} className="flex-1 touch-target">
+                  Cancel
+                </Button>
+                <Button type="submit" variant="primary" className="flex-1 touch-target">
+                  {isEdit ? 'Save Changes' : 'Add Commitment'}
+                </Button>
+              </div>
+            )}
           </form>
         </CardContent>
       </Card>

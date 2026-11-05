@@ -58,7 +58,8 @@ export async function updateCommitment(req: Request, res: Response) {
   try {
     const id = req.params.id;
     const updates = req.body;
-    const commitment = await CommitmentService.updateCommitment(id, updates);
+    const scope = req.query.scope === 'all' ? 'all' : 'single';
+    const commitment = await CommitmentService.updateCommitment(id, updates, scope);
     res.json(commitment);
   } catch (error) {
     res.status(400).json({ error: 'Failed to update commitment' });

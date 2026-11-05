@@ -61,10 +61,15 @@ export const RefactoredDashboard = () => {
   const [showCommitmentForm, setShowCommitmentForm] = useState(false);
   // COMMENTED OUT: Import functionality disabled
   // const [showImportWizard, setShowImportWizard] = useState(false);
+  const [commitmentToEdit, setCommitmentToEdit] = useState<any | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [commitmentToDelete, setCommitmentToDelete] = useState<CommitmentWithStatus | null>(null);
   const [showIncomeWarning, setShowIncomeWarning] = useState(false);
-  const [commitmentForWarning, setCommitmentForWarning] = useState<{ id: string; title: string; amount: number } | null>(null);
+  const [commitmentForWarning, setCommitmentForWarning] = useState<{
+    id: string;
+    title: string;
+    amount: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Filter state
@@ -305,6 +310,40 @@ export const RefactoredDashboard = () => {
       toast({
         title: 'Error',
         description: error.message || 'Failed to mark commitment as unpaid',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleEditCommitment = (commitmentId: string) => {
+    setCommitmentToEdit(commitments.find(c => c.id === commitmentId) ?? null);
+  };
+
+  const handleSaveEdit = async (
+    updated: { title: string; amount: number; type: 'commitment' | 'expenses'; category: string },
+    scope: 'single' | 'all' = 'single'
+  ) => {
+    if (!commitmentToEdit) return;
+    try {
+      await apiRequest(`/api/commitments/${commitmentToEdit.id}?scope=${scope}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          title: updated.title,
+          amount: updated.amount.toString(),
+          type: updated.type,
+          category: updated.category,
+        }),
+      });
+      setCommitmentToEdit(null);
+      await loadDashboardData();
+      toast({
+        title: 'Commitment updated!',
+        description: scope === 'all' ? `${updated.title} updated for the entire series` : `${updated.title} updated`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update commitment',
         variant: 'destructive',
       });
     }
@@ -583,6 +622,7 @@ export const RefactoredDashboard = () => {
           onMarkUnpaid={handleMarkUnpaid}
           onAddNew={() => setShowCommitmentForm(true)}
           onDelete={handleDeleteCommitment}
+          onEdit={handleEditCommitment}
           isHistorical={isHistoricalMonth}
         />
 
@@ -594,6 +634,14 @@ export const RefactoredDashboard = () => {
           isVisible={showCommitmentForm}
           onSubmit={handleAddCommitment}
           onCancel={() => setShowCommitmentForm(false)}
+        />
+
+        <CommitmentForm
+          isVisible={!!commitmentToEdit}
+          initialValues={commitmentToEdit ?? undefined}
+          isSeries={!!commitmentToEdit?.seriesId}
+          onSubmit={handleSaveEdit}
+          onCancel={() => setCommitmentToEdit(null)}
         />
 
         <IncomeModal

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Check, Undo2, Users, Clock, Trash2, FileText, Repeat, Sliders, AlertCircle } from 'lucide-react';
+import { Plus, Check, Undo2, Users, Clock, Trash2, FileText, Repeat, Sliders, AlertCircle, Pencil } from 'lucide-react';
 
 interface Commitment {
   id: string;
@@ -23,6 +23,7 @@ interface CommitmentsListProps {
   onMarkUnpaid?: (id: string) => void;
   onAddNew: () => void;
   onDelete?: (id: string) => void;
+  onEdit?: (id: string) => void;
   /** When true, the view is read-only (historical month) */
   isHistorical?: boolean;
 }
@@ -44,6 +45,7 @@ interface TypeGroupProps {
   onMarkPaid: (id: string, amount: number) => void;
   onMarkUnpaid?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onEdit?: (id: string) => void;
   /** Additional classes applied to the group wrapper */
   className?: string;
   isHistorical?: boolean;
@@ -58,6 +60,7 @@ const TypeGroup = ({
   onMarkPaid,
   onMarkUnpaid,
   onDelete,
+  onEdit,
   className = '',
   isHistorical,
 }: TypeGroupProps) => {
@@ -79,6 +82,7 @@ const TypeGroup = ({
             onMarkPaid={onMarkPaid}
             onMarkUnpaid={onMarkUnpaid}
             onDelete={onDelete}
+            onEdit={onEdit}
             isHistorical={isHistorical}
           />
         ))}
@@ -94,6 +98,7 @@ export const CommitmentsList = ({
   onMarkUnpaid,
   onAddNew,
   onDelete,
+  onEdit,
   isHistorical = false,
 }: CommitmentsListProps) => {
   // Exclude imported commitments from active totals
@@ -194,6 +199,7 @@ export const CommitmentsList = ({
                   onMarkPaid={onMarkPaid}
                   onMarkUnpaid={onMarkUnpaid}
                   onDelete={onDelete}
+                  onEdit={onEdit}
                   isHistorical={isHistorical}
                 />
                 <TypeGroup
@@ -204,6 +210,7 @@ export const CommitmentsList = ({
                   onMarkPaid={onMarkPaid}
                   onMarkUnpaid={onMarkUnpaid}
                   onDelete={onDelete}
+                  onEdit={onEdit}
                   isHistorical={isHistorical}
                 />
                 <TypeGroup
@@ -214,6 +221,7 @@ export const CommitmentsList = ({
                   onMarkPaid={onMarkPaid}
                   onMarkUnpaid={onMarkUnpaid}
                   onDelete={onDelete}
+                  onEdit={onEdit}
                   isHistorical={isHistorical}
                 />
               </div>
@@ -236,6 +244,7 @@ export const CommitmentsList = ({
                   onMarkPaid={onMarkPaid}
                   onMarkUnpaid={onMarkUnpaid}
                   onDelete={onDelete}
+                  onEdit={onEdit}
                   isHistorical={isHistorical}
                 />
                 <TypeGroup
@@ -246,6 +255,7 @@ export const CommitmentsList = ({
                   onMarkPaid={onMarkPaid}
                   onMarkUnpaid={onMarkUnpaid}
                   onDelete={onDelete}
+                  onEdit={onEdit}
                   isHistorical={isHistorical}
                 />
                 <TypeGroup
@@ -256,6 +266,7 @@ export const CommitmentsList = ({
                   onMarkPaid={onMarkPaid}
                   onMarkUnpaid={onMarkUnpaid}
                   onDelete={onDelete}
+                  onEdit={onEdit}
                   isHistorical={isHistorical}
                 />
               </div>
@@ -278,6 +289,7 @@ export const CommitmentsList = ({
                       onMarkPaid={onMarkPaid}
                       onMarkUnpaid={onMarkUnpaid}
                       onDelete={onDelete}
+                      onEdit={onEdit}
                     />
                   ))}
                 </div>
@@ -296,6 +308,7 @@ interface CommitmentItemProps {
   onMarkPaid: (id: string, amount: number) => void;
   onMarkUnpaid?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onEdit?: (id: string) => void;
   isHistorical?: boolean;
 }
 
@@ -305,6 +318,7 @@ const CommitmentItem = ({
   onMarkPaid,
   onMarkUnpaid,
   onDelete,
+  onEdit,
   isHistorical,
 }: CommitmentItemProps) => {
   // A commitment is overdue when it is unpaid and belongs to a past (historical) month
@@ -359,7 +373,9 @@ const CommitmentItem = ({
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className={`text-lg font-bold ${commitment.isPaid ? 'text-muted-foreground' : isOverdue ? 'text-red-700' : ''}`}>
+          <span
+            className={`text-lg font-bold ${commitment.isPaid ? 'text-muted-foreground' : isOverdue ? 'text-red-700' : ''}`}
+          >
             {currency} {commitment.amount.toLocaleString()}
           </span>
         </div>
@@ -398,6 +414,20 @@ const CommitmentItem = ({
           >
             <Check className="h-4 w-4 mr-1" />
             <span>Mark Paid</span>
+          </Button>
+        )}
+
+        {onEdit && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onEdit(commitment.id)}
+            disabled={isHistorical}
+            title={isHistorical ? 'Cannot modify historical records' : 'Edit'}
+            aria-label={`Edit ${commitment.title}`}
+            className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 disabled:opacity-50 disabled:pointer-events-none touch-target"
+          >
+            <Pencil className="h-4 w-4" />
           </Button>
         )}
 

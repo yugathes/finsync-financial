@@ -198,14 +198,27 @@ class CommitmentService {
       throw error;
     }
   }
-  async updateCommitment(id: string, updates: Partial<Commitment>): Promise<Commitment> {
+  async updateCommitment(
+    id: string,
+    updates: Partial<Commitment>,
+    scope: 'single' | 'all' = 'single'
+  ): Promise<Commitment> {
     try {
+      // Only content fields are editable; ownership, series and dates stay fixed.
+      const { title, amount, category, type } = updates;
+      const data = { title, amount, category, type, updatedAt: new Date() };
+
+      if (scope === 'all') {
+        const target = await prisma.commitment.findUnique({ where: { id }, select: { seriesId: true } });
+        if (target?.seriesId) {
+          await prisma.commitment.updateMany({ where: { seriesId: target.seriesId }, data });
+          return prisma.commitment.findUniqueOrThrow({ where: { id } });
+        }
+      }
+
       const commitment = await prisma.commitment.update({
         where: { id: id },
-        data: {
-          ...updates,
-          updatedAt: new Date(),
-        },
+        data,
       });
       return commitment;
     } catch (error) {
